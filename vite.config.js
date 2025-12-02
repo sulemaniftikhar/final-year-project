@@ -10,5 +10,4 @@ export default defineConfig({
       },
     }),
   ],
-  base: "/final-year-project",
 })
