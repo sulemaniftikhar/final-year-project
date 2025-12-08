@@ -1,9 +1,16 @@
-function App() {
-  return (
-    <>
-      <div>Project Structure</div>
-    </>
-  );
-}
+import { AuthProvider } from "@/context/AuthContext"
+import { DataProvider } from "@/context/DataContext"
+import AppRouter from "@/components/AppRouter"
+import ErrorBoundary from "@/components/ErrorBoundary"
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <DataProvider>
+        <ErrorBoundary>
+          <AppRouter />
+        </ErrorBoundary>
+      </DataProvider>
+    </AuthProvider>
+  )
+}
