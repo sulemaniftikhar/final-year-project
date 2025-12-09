@@ -1,0 +1,19 @@
+{
+  "name": "orderiq-email-service",
+  "version": "1.0.0",
+  "description": "Email service for OrderIQ food ordering platform",
+  "main": "emailService.js",
+  "scripts": {
+    "start": "node emailService.js",
+    "dev": "nodemon emailService.js"
+  },
+  "keywords": ["email", "nodemailer", "orderiq"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemailer": "^6.9.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
