@@ -42,22 +42,20 @@ export default function HomePage({ onCustomerClick, onRestaurantClick, onLoginCl
             Experience the best food ordering from your favorite restaurants. Fast, reliable, and always fresh!
           </p>
 
-          {!isAuthenticated && (
-            <div className="flex gap-4 justify-center flex-wrap">
-              <button 
-                onClick={handleCustomerClick}
-                className="px-6 py-3 bg-amber-500 border-2 border-white text-white rounded-lg font-semibold hover:bg-amber-600 transition-all duration-200 transform hover:-translate-y-0.5 shadow-md"
-              >
-                Order as Customer
-              </button>
-              <button 
-                onClick={handleRestaurantClick}
-                className="px-6 py-3 bg-amber-500 border-2 border-white text-white rounded-lg font-semibold hover:bg-amber-600 transition-all duration-200 transform hover:-translate-y-0.5 shadow-md"
-              >
-                Manage Restaurant
-              </button>
-            </div>
-          )}
+          <div className="flex gap-4 justify-center flex-wrap">
+            <button
+              onClick={handleCustomerClick}
+              className="px-6 py-3 bg-white text-primary border-2 border-white rounded-lg font-semibold hover:bg-white/90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-md"
+            >
+              {isAuthenticated ? "Browse Restaurants" : "Order as Customer"}
+            </button>
+            <button
+              onClick={handleRestaurantClick}
+              className="px-6 py-3 bg-accent text-accent-foreground border-2 border-white rounded-lg font-semibold hover:bg-accent/90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-md"
+            >
+              Manage Restaurant
+            </button>
+          </div>
         </div>
       </div>
 
@@ -71,11 +69,10 @@ export default function HomePage({ onCustomerClick, onRestaurantClick, onLoginCl
               <button
                 key={cuisine}
                 onClick={() => setSelectedCuisine(cuisine)}
-                className={`px-4 py-2 rounded-full font-semibold transition-all ${
-                  selectedCuisine === cuisine
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-border text-foreground hover:bg-muted"
-                }`}
+                className={`px-4 py-2 rounded-full font-semibold transition-all ${selectedCuisine === cuisine
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-border text-foreground hover:bg-muted"
+                  }`}
               >
                 {cuisine}
               </button>
@@ -101,8 +98,8 @@ export default function HomePage({ onCustomerClick, onRestaurantClick, onLoginCl
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRestaurants.map((restaurant) => (
-                <RestaurantCard 
-                  key={restaurant.id} 
+                <RestaurantCard
+                  key={restaurant.id}
                   restaurant={restaurant}
                   onClick={handleRestaurantCardClick}
                 />
