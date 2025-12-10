@@ -8,6 +8,7 @@ import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-do
 
 
 import PublicLayout from "./layouts/PublicLayout"
+import FloatingLogoutButton from "./FloatingLogoutButton"
 import HomePage from "./HomePage"
 import CustomerDashboard from "./dashboards/CustomerDashboard"
 import RestaurantDashboard from "./dashboards/RestaurantDashboard"
@@ -46,6 +47,7 @@ export default function AppRouter() {
 
   return (
     <div className="min-h-screen bg-background">
+      <FloatingLogoutButton />
       <Routes>
         <Route path="/" element={
           <PublicLayout

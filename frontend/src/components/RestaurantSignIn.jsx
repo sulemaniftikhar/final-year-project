@@ -5,8 +5,10 @@
 import { useState } from "react"
 import { isValidEmail } from "@/lib/validation"
 import { useAuth } from "@/context/AuthContext"
-import { auth } from "@/lib/firebase"
+import { auth, db } from "@/lib/firebase"
 import { signInWithEmailAndPassword } from "firebase/auth"
+import { doc, getDoc } from "firebase/firestore"
+import { toast } from "sonner"
 
 export default function RestaurantSignIn({ onBack, onSwitchToSignUp, onLoginSuccess }) {
   const [formData, setFormData] = useState({
@@ -48,13 +50,49 @@ export default function RestaurantSignIn({ onBack, onSwitchToSignUp, onLoginSucc
       // Sign in restaurant with Firebase
       await signInWithEmailAndPassword(auth, formData.email, formData.password)
       const user = auth.currentUser
+      
+      // Fetch user data from Firestore to verify role
+      const userDocRef = doc(db, "users", user.uid)
+      const userDoc = await getDoc(userDocRef)
+      
+      if (!userDoc.exists()) {
+        await auth.signOut()
+        toast.error("Account not found. Please sign up first.", {
+          position: "top-center",
+        })
+        setErrors({ submit: "Account not found" })
+        setIsLoading(false)
+        return
+      }
 
-      // Create user data object
+      const userDataFromDb = userDoc.data()
+      
+      // Check if user role is restaurant
+      if (userDataFromDb.role !== "restaurant") {
+        await auth.signOut()
+        toast.error(`This is a ${userDataFromDb.role} account. Please use the ${userDataFromDb.role} sign-in page.`, {
+          position: "top-center",
+        })
+        setErrors({ submit: `Wrong login portal. This is a ${userDataFromDb.role} account.` })
+        setIsLoading(false)
+        return
+      }
+      
+      // Show success toast
+      toast.success("Restaurant logged in successfully!", {
+        position: "top-center",
+      })
+
+      // Create user data object from Firestore data
       const userData = {
         id: user.uid,
-        email: formData.email,
-        role: "restaurant",
-        restaurantName: user.displayName || "Demo Restaurant",
+        email: userDataFromDb.email,
+        role: userDataFromDb.role,
+        restaurantName: userDataFromDb.restaurantName,
+        ownerName: userDataFromDb.ownerName,
+        phone: userDataFromDb.phone,
+        address: userDataFromDb.address,
+        cuisine: userDataFromDb.cuisine,
       }
       login(userData)
       if (onLoginSuccess) {
@@ -62,6 +100,9 @@ export default function RestaurantSignIn({ onBack, onSwitchToSignUp, onLoginSucc
       }
     } catch (error) {
       console.error("Restaurant sign-in error:", error.message)
+      toast.error(error.message, {
+        position: "top-center",
+      })
       setErrors({ submit: "Invalid email or password" })
     } finally {
       setIsLoading(false)
