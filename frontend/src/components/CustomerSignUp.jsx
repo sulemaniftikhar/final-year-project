@@ -1,4 +1,5 @@
-
+// Customer Sign Up Page - Modern split-screen design
+// Reference: SRS 3.2.1 - User Account and Authentication (FR-02)
 
 import { useState } from "react"
 import { useAuth } from "@/context/AuthContext"
@@ -8,6 +9,7 @@ import { setDoc, doc } from "firebase/firestore"
 import { sendWelcomeCustomerEmail } from "@/lib/emailAPI"
 import { toast } from "sonner"
 import { isValidEmail, getPasswordStrength } from "@/lib/validation"
+import { Icon } from "@iconify/react"
 
 export default function CustomerSignUp({ onBack, onSwitchToSignIn, onSignupSuccess }) {
   const [formData, setFormData] = useState({
@@ -15,10 +17,11 @@ export default function CustomerSignUp({ onBack, onSwitchToSignIn, onSignupSucce
     password: "",
     confirmPassword: "",
     fullName: "",
-    countryCode: "+92",
+    countryCode: "+1",
     phone: "",
   })
-
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
@@ -32,8 +35,6 @@ export default function CustomerSignUp({ onBack, onSwitchToSignIn, onSignupSucce
   }
 
   const passwordInfo = getPasswordStrength(formData.password)
-  const emailValid = formData.email ? isValidEmail(formData.email) : null
-
 
   const validateForm = () => {
     const newErrors = {}
@@ -59,34 +60,27 @@ export default function CustomerSignUp({ onBack, onSwitchToSignIn, onSignupSucce
 
     setIsLoading(true)
     try {
-      // Register user with Firebase
       await createUserWithEmailAndPassword(auth, formData.email, formData.password)
       const user = auth.currentUser
-      
-      // Save user data to Firestore
+
       if (user) {
         const fullPhone = `${formData.countryCode}${formData.phone}`
         await setDoc(doc(db, "users", user.uid), {
           email: formData.email,
-          fullName: formData.fullName,
+          name: formData.fullName,
           phone: fullPhone,
-          countryCode: formData.countryCode,
-          phoneLocal: formData.phone,
           role: "customer",
           createdAt: new Date().toISOString(),
         })
       }
-      
-      // Send welcome email
+
       try {
         await sendWelcomeCustomerEmail(formData.email, formData.fullName)
         toast.success("Welcome email sent!")
       } catch (emailError) {
         console.error("Failed to send welcome email:", emailError)
-        // Don't block signup if email fails
       }
 
-      // Create user data object
       const userData = {
         id: user.uid,
         email: formData.email,
@@ -96,11 +90,13 @@ export default function CustomerSignUp({ onBack, onSwitchToSignIn, onSignupSucce
         isAuthenticated: true,
       }
       login(userData)
+      toast.success("Account created successfully!")
       if (onSignupSuccess) {
         onSignupSuccess("customer")
       }
     } catch (error) {
       console.error("Customer sign-up error:", error.message)
+      toast.error(error.message)
       setErrors({ submit: error.message })
     } finally {
       setIsLoading(false)
@@ -108,221 +104,233 @@ export default function CustomerSignUp({ onBack, onSwitchToSignIn, onSignupSucce
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-accent/5">
-      {/* Header with Back Button */}
-      <div className="border-b border-border bg-white sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to OrderIQ
-          </button>
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+      {/* Header */}
+      <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4 lg:px-10 sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 text-primary flex items-center justify-center bg-background rounded-lg p-1.5">
+            <Icon icon="lucide:bar-chart-2" className="w-full h-full" />
+          </div>
+          <h2 className="text-foreground text-xl font-bold leading-tight tracking-tight">OrderIQ</h2>
         </div>
-      </div>
+        <button
+          onClick={onBack}
+          className="flex min-w-[84px] items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-background hover:bg-muted transition-colors text-foreground text-sm font-bold"
+        >
+          <span className="truncate">Back to OrderIQ</span>
+        </button>
+      </header>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Left Side - Hero Content */}
-          <div className="hidden md:block">
-            <h1 className="text-5xl font-bold text-foreground mb-6">
-              Join <span className="text-primary">OrderIQ</span> Today
+      <main className="flex-1 flex flex-col lg:flex-row">
+        {/* Left Column: Hero/Marketing */}
+        <div className="lg:w-5/12 xl:w-1/2 p-6 lg:p-12 xl:p-20 flex flex-col justify-center bg-background relative overflow-hidden">
+          {/* Decorative background */}
+          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, #2bee79 0%, transparent 20%), radial-gradient(circle at 90% 80%, #2bee79 0%, transparent 20%)' }}></div>
+
+          <div className="relative z-10 max-w-lg mx-auto lg:mx-0">
+            <h1 className="text-foreground tracking-tight text-4xl lg:text-5xl font-bold leading-tight mb-8">
+              Join OrderIQ Today
             </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Create an account to start ordering delicious food from the best restaurants.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🚀</span>
+
+            <div className="flex flex-col gap-4">
+              {/* Feature 1 */}
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card border border-border shadow-sm">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                  <Icon icon="lucide:rocket" className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Quick Setup</h3>
-                  <p className="text-sm text-muted-foreground">Get started in less than a minute</p>
+                  <h3 className="text-lg font-bold text-foreground mb-1">Quick Setup</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Get started in minutes. No credit card required for trial.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">💳</span>
+
+              {/* Feature 2 */}
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card border border-border shadow-sm">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                  <Icon icon="lucide:lock" className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Secure Payment</h3>
-                  <p className="text-sm text-muted-foreground">Your data is encrypted and secure</p>
+                  <h3 className="text-lg font-bold text-foreground mb-1">Secure Payment</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Your data is encrypted and safe with us. We prioritize privacy.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🎯</span>
+
+              {/* Feature 3 */}
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card border border-border shadow-sm">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                  <Icon icon="lucide:sparkles" className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Personalized Experience</h3>
-                  <p className="text-sm text-muted-foreground">Recommendations based on your taste</p>
+                  <h3 className="text-lg font-bold text-foreground mb-1">Personalized Experience</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">AI-driven recommendations tailored just for your taste buds.</p>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Right Side - Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-border">
-            <h2 className="text-3xl font-bold text-foreground mb-2">Create Account</h2>
-            <p className="text-muted-foreground mb-8">Fill in your details to get started</p>
+        {/* Right Column: Sign Up Form */}
+        <div className="lg:w-7/12 xl:w-1/2 bg-card flex flex-col justify-center p-6 lg:p-12 xl:p-20 border-l border-border">
+          <div className="max-w-[560px] mx-auto w-full">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-foreground mb-2">Create your account</h2>
+              <p className="text-muted-foreground">Fill in your details below to get started with OrderIQ.</p>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               {/* Full Name */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Full Name</label>
+              <label className="flex flex-col w-full">
+                <span className="text-foreground text-sm font-medium leading-normal pb-2 ml-1">Full Name</span>
                 <input
                   type="text"
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  placeholder="John Doe"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.fullName ? "border-destructive" : "border-border"
-                  } bg-background`}
+                  className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                  placeholder="e.g. Jane Doe"
                 />
-                {errors.fullName && <p className="text-destructive text-sm mt-1">{errors.fullName}</p>}
-              </div>
+                {errors.fullName && <span className="text-destructive text-xs font-medium mt-1.5 ml-1">{errors.fullName}</span>}
+              </label>
 
               {/* Email */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Email Address</label>
+              <label className="flex flex-col w-full">
+                <span className="text-foreground text-sm font-medium leading-normal pb-2 ml-1">Email Address</span>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="you@example.com"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.email ? "border-destructive" : "border-border"
-                  } bg-background`}
+                  className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                  placeholder="jane@example.com"
                 />
-                {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
-                {emailValid !== null && (
-                  <p className={`text-xs mt-1 ${emailValid ? 'text-green-600' : 'text-destructive'}`}>
-                    {emailValid ? 'Valid email' : 'Invalid email format'}
-                  </p>
-                )}
-              </div>
+                {errors.email && <span className="text-destructive text-xs font-medium mt-1.5 ml-1">{errors.email}</span>}
+              </label>
 
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Phone Number</label>
-                <div className="flex gap-2">
-                  <select
-                    name="countryCode"
-                    value={formData.countryCode}
-                    onChange={handleInputChange}
-                    className={`w-28 px-3 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                      errors.countryCode ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  >
-                    <option value="+92">+92 (PK)</option>
-                    <option value="+1">+1 (US)</option>
-                    <option value="+44">+44 (UK)</option>
-                    <option value="+61">+61 (AU)</option>
-                    <option value="+91">+91 (IN)</option>
-                  </select>
+              {/* Phone Number with Country Code */}
+              <label className="flex flex-col w-full">
+                <span className="text-foreground text-sm font-medium leading-normal pb-2 ml-1">Phone Number</span>
+                <div className="flex gap-3">
+                  <div className="relative w-28">
+                    <select
+                      name="countryCode"
+                      value={formData.countryCode}
+                      onChange={handleInputChange}
+                      className="appearance-none w-full h-14 rounded-xl border border-border bg-background px-4 text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer"
+                    >
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+92">🇵🇰 +92</option>
+                      <option value="+61">🇦🇺 +61</option>
+                      <option value="+49">🇩🇪 +49</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-foreground">
+                      <Icon icon="lucide:chevron-down" className="w-4 h-4" />
+                    </div>
+                  </div>
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="3001234567"
-                    className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                      errors.phone ? "border-destructive" : "border-border"
-                    } bg-background`}
+                    className="form-input flex-1 w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                    placeholder="(555) 000-0000"
                   />
                 </div>
-                {errors.countryCode && <p className="text-destructive text-sm mt-1">{errors.countryCode}</p>}
-                {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
-              </div>
+                {errors.phone && <span className="text-destructive text-xs font-medium mt-1.5 ml-1">{errors.phone}</span>}
+              </label>
 
               {/* Password */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.password ? "border-destructive" : "border-border"
-                  } bg-background`}
-                />
-                {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
-                {/* Password strength */}
+              <div className="flex flex-col w-full">
+                <label className="flex flex-col w-full">
+                  <span className="text-foreground text-sm font-medium leading-normal pb-2 ml-1">Password</span>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all pr-12"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Icon icon={showPassword ? "lucide:eye" : "lucide:eye-off"} />
+                    </button>
+                  </div>
+                </label>
+                {errors.password && <span className="text-destructive text-xs font-medium mt-1.5 ml-1">{errors.password}</span>}
+
+                {/* Password Strength Indicator */}
                 {formData.password && (
-                  <div className="mt-2">
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${passwordInfo.color}`}
-                        style={{ width: `${passwordInfo.pct}%` }}
-                      />
+                  <div className="mt-3 px-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-muted-foreground">Strength</span>
+                      <span className={`text-xs font-bold ${passwordInfo.color}`}>{passwordInfo.label}</span>
                     </div>
-                    <p className={`text-xs mt-1 ${passwordInfo.color}`}>{passwordInfo.label}</p>
-                    {passwordInfo.suggestions.length > 0 && (
-                      <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                        {passwordInfo.suggestions.slice(0, 3).map((s) => (
-                          <li key={s}>• {s}</li>
-                        ))}
-                      </ul>
-                    )}
+                    <div className="flex gap-2 h-1.5 w-full">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-full flex-1 rounded-full ${i <= Math.ceil(passwordInfo.pct / 25) ? passwordInfo.color : 'bg-border'
+                            }`}
+                        ></div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Confirm Password</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.confirmPassword ? "border-destructive" : "border-border"
-                  } bg-background`}
-                />
-                {errors.confirmPassword && <p className="text-destructive text-sm mt-1">{errors.confirmPassword}</p>}
-              </div>
+              <label className="flex flex-col w-full">
+                <span className="text-foreground text-sm font-medium leading-normal pb-2 ml-1">Confirm Password</span>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all pr-12"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Icon icon={showConfirmPassword ? "lucide:eye" : "lucide:eye-off"} />
+                  </button>
+                </div>
+                {errors.confirmPassword && <span className="text-destructive text-xs font-medium mt-1.5 ml-1">{errors.confirmPassword}</span>}
+              </label>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-6"
-              >
-                {isLoading ? "Creating Account..." : "Create Account"}
-              </button>
+              {/* Actions */}
+              <div className="flex flex-col gap-4 mt-4">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex w-full items-center justify-center overflow-hidden rounded-full h-14 px-6 bg-primary hover:brightness-110 text-primary-foreground text-base font-bold transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={onSwitchToSignIn}
+                    className="text-foreground font-bold hover:underline decoration-primary decoration-2 underline-offset-4"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              </div>
             </form>
-
-            {/* Divider */}
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-muted-foreground">Already have account?</span>
-              </div>
-            </div>
-
-            {/* Sign In Link */}
-            <button
-              onClick={onSwitchToSignIn}
-              className="w-full border-2 border-primary text-primary py-3 rounded-lg font-bold hover:bg-primary/5 transition-colors"
-            >
-              Sign In
-            </button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

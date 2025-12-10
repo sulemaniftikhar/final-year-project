@@ -130,7 +130,11 @@
   body {
     @apply bg-background text-foreground;
   }
-  
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   /* Force pointer cursor on all clickable elements */
   button,
   a,
@@ -145,5 +149,15 @@
   .cursor-pointer,
   [onclick] {
     cursor: pointer !important;
+  }
+
+  /* Hide scrollbar utility */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

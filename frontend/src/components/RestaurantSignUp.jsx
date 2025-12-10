@@ -1,5 +1,4 @@
-
-// Restaurant Sign Up Page - Stylish modern design
+// Restaurant Sign Up Page - Modern split-screen design
 // Reference: SRS 3.2.1 - User Account and Authentication (FR-01)
 
 import { useState } from "react"
@@ -10,6 +9,7 @@ import { setDoc, doc } from "firebase/firestore"
 import { sendWelcomeRestaurantEmail } from "@/lib/emailAPI"
 import { toast } from "sonner"
 import { isValidEmail, getPasswordStrength } from "@/lib/validation"
+import { Icon } from "@iconify/react"
 
 export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuccess }) {
   const [formData, setFormData] = useState({
@@ -18,7 +18,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
     confirmPassword: "",
     restaurantName: "",
     ownerName: "",
-    countryCode: "+92",
+    countryCode: "+1",
     phone: "",
     address: "",
     cuisine: "",
@@ -26,7 +26,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
 
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-  const { signup } = useAuth()
+  const { login } = useAuth()
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -37,7 +37,6 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
   }
 
   const passwordInfo = getPasswordStrength(formData.password)
-  const emailValid = formData.email ? isValidEmail(formData.email) : null
 
   const validateForm = () => {
     const newErrors = {}
@@ -66,54 +65,48 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
 
     setIsLoading(true)
     try {
-      // Register restaurant with Firebase
       await createUserWithEmailAndPassword(auth, formData.email, formData.password)
       const user = auth.currentUser
-      
-      // Save restaurant data to Firestore
+
       if (user) {
         const fullPhone = `${formData.countryCode}${formData.phone}`
         await setDoc(doc(db, "users", user.uid), {
           email: formData.email,
+          name: formData.ownerName,
           restaurantName: formData.restaurantName,
-          ownerName: formData.ownerName,
           phone: fullPhone,
-          countryCode: formData.countryCode,
-          phoneLocal: formData.phone,
           address: formData.address,
           cuisine: formData.cuisine,
           role: "restaurant",
           createdAt: new Date().toISOString(),
         })
       }
-      
 
-      // Send welcome email
       try {
         await sendWelcomeRestaurantEmail(formData.email, formData.restaurantName)
         toast.success("Welcome email sent!")
       } catch (emailError) {
         console.error("Failed to send welcome email:", emailError)
-        // Don't block signup if email fails
       }
 
-      // Create user data object
       const userData = {
         id: user.uid,
         email: formData.email,
         role: "restaurant",
+        name: formData.ownerName,
         restaurantName: formData.restaurantName,
-        ownerName: formData.ownerName,
         phone: `${formData.countryCode}${formData.phone}`,
         address: formData.address,
         cuisine: formData.cuisine,
       }
-      signup(userData)
+      login(userData)
+      toast.success("Restaurant registered successfully!")
       if (onSignupSuccess) {
         onSignupSuccess("restaurant")
       }
     } catch (error) {
       console.error("Restaurant sign-up error:", error.message)
+      toast.error(error.message)
       setErrors({ submit: error.message })
     } finally {
       setIsLoading(false)
@@ -121,255 +114,278 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-accent/5 to-primary/5">
-      <div className="border-b border-border bg-white sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-foreground hover:text-accent transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to OrderIQ
-          </button>
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+      {/* Header */}
+      <header className="flex items-center justify-between border-b border-border bg-card px-6 lg:px-10 py-4 sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 text-primary">
+            <Icon icon="lucide:bar-chart-2" className="w-full h-full" />
+          </div>
+          <h2 className="text-foreground text-xl font-bold leading-tight tracking-tight">OrderIQ</h2>
         </div>
-      </div>
+        <button
+          onClick={onBack}
+          className="flex min-w-[84px] items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-primary/20 hover:bg-primary/30 text-foreground transition-colors text-sm font-bold"
+        >
+          <span className="truncate">Back to OrderIQ</span>
+        </button>
+      </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-2 gap-12 items-start">
-          <div className="hidden md:block pt-8">
-            <h1 className="text-5xl font-bold text-foreground mb-6">
-              Grow Your <span className="text-accent">Restaurant</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Join OrderIQ and start accepting orders directly without commission fees.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">💰</span>
-                </div>
+      {/* Main Content */}
+      <div className="flex flex-1 justify-center py-8 lg:py-12 px-4 md:px-8">
+        <div className="max-w-[1280px] w-full flex flex-col lg:flex-row gap-12 lg:gap-20">
+          {/* Left Column: Hero / Marketing */}
+          <div className="flex flex-col flex-1 lg:max-w-[480px] lg:pt-8 gap-8">
+            <div className="flex flex-col gap-4">
+              <h1 className="text-foreground text-4xl lg:text-5xl font-black leading-tight tracking-tight">
+                Grow Your <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Restaurant</span>
+              </h1>
+              <p className="text-muted-foreground text-lg font-normal leading-normal">
+                Partner with OrderIQ to unlock exclusive tools and reach thousands of new hungry customers.
+              </p>
+            </div>
+
+            {/* Value Props */}
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-card shadow-sm border border-border">
+                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 text-2xl">💰</span>
                 <div>
-                  <h3 className="font-semibold text-foreground">0% Commission</h3>
-                  <p className="text-sm text-muted-foreground">Keep 100% of your earnings</p>
+                  <h3 className="font-bold text-foreground">0% Commission</h3>
+                  <p className="text-sm text-muted-foreground">Keep all your earnings for the first month</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">📈</span>
-                </div>
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-card shadow-sm border border-border">
+                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 text-2xl">📈</span>
                 <div>
-                  <h3 className="font-semibold text-foreground">Increase Sales</h3>
-                  <p className="text-sm text-muted-foreground">Reach more customers daily</p>
+                  <h3 className="font-bold text-foreground">Increase Sales</h3>
+                  <p className="text-sm text-muted-foreground">Boost your orders by up to 30%</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🔧</span>
-                </div>
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-card shadow-sm border border-border">
+                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 text-2xl">🛠️</span>
                 <div>
-                  <h3 className="font-semibold text-foreground">Simple Tools</h3>
-                  <p className="text-sm text-muted-foreground">Easy-to-use management system</p>
+                  <h3 className="font-bold text-foreground">Simple Tools</h3>
+                  <p className="text-sm text-muted-foreground">Manage menus and orders easily</p>
                 </div>
               </div>
             </div>
+
+            {/* Success Story Image */}
+            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-lg mt-4 group">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+              <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon icon="lucide:badge-check" className="text-primary" />
+                  <span className="font-bold text-sm tracking-wide uppercase">Success Story</span>
+                </div>
+                <p className="font-medium">"OrderIQ transformed our takeout business overnight!"</p>
+              </div>
+              <img
+                alt="Restaurant Owner"
+                className="object-cover w-full h-full transform transition-transform duration-700 group-hover:scale-105"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCllNN21pVZ3c7Rqv7p74Qcvc5dEMlv3emjSLKIsEAf_BdmP9guFJZkV_erQVVfBaUNjRhmci4NMvAvbQnxfiZuzsVikjHlI-6CZ_NcjWQ5aNu8h5pSmPbJe8D2d5Qd3kCU68FsDGMLjsInwarv9UAL9Buswj7lJETkezZD_sfhBBJG9bMObYMJhN5Dtk5L6kaRp_xG3X8kHzysoyyKyXL07BWGY2gINtLytEMRJRyoujy_M8HAAd4zrjXFCf2qsjn4br9I9suKIL0h"
+              />
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-border">
-            <h2 className="text-3xl font-bold text-foreground mb-2">Register Restaurant</h2>
-            <p className="text-muted-foreground mb-6 text-sm">Create your restaurant account</p>
+          {/* Right Column: Sign Up Form */}
+          <div className="flex flex-col flex-1 w-full max-w-[640px] lg:mt-0">
+            <div className="bg-card border border-border rounded-2xl p-6 md:p-8 lg:p-10 shadow-sm">
+              <div className="mb-8">
+                <h2 className="text-foreground text-2xl md:text-3xl font-bold leading-tight mb-2">Create your partner account</h2>
+                <p className="text-muted-foreground">Fill in your details to get started.</p>
+              </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Restaurant Name</label>
-                  <input
-                    type="text"
-                    name="restaurantName"
-                    value={formData.restaurantName}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Pizza Palace"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.restaurantName ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  />
-                  {errors.restaurantName && <p className="text-destructive text-sm mt-1">{errors.restaurantName}</p>}
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Owner Name</label>
-                  <input
-                    type="text"
-                    name="ownerName"
-                    value={formData.ownerName}
-                    onChange={handleInputChange}
-                    placeholder="Your name"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.ownerName ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  />
-                  {errors.ownerName && <p className="text-destructive text-sm mt-1">{errors.ownerName}</p>}
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="restaurant@example.com"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.email ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  />
-                  {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
-                  {emailValid !== null && (
-                    <p className={`text-xs mt-1 ${emailValid ? 'text-green-600' : 'text-destructive'}`}>
-                      {emailValid ? 'Valid email' : 'Invalid email format'}
-                    </p>
-                  )}
-                </div>
-
-                
-
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Phone</label>
-                  <div className="flex gap-2">
-                    <select
-                      name="countryCode"
-                      value={formData.countryCode}
-                      onChange={handleInputChange}
-                      className={`w-28 px-3 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                        errors.countryCode ? "border-destructive" : "border-border"
-                      } bg-background`}
-                    >
-                      <option value="+92">+92 (PK)</option>
-                      <option value="+1">+1 (US)</option>
-                      <option value="+44">+44 (UK)</option>
-                      <option value="+61">+61 (AU)</option>
-                      <option value="+91">+91 (IN)</option>
-                    </select>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                {/* Row 1 */}
+                <div className="flex flex-col md:flex-row gap-5">
+                  <label className="flex flex-col flex-1 gap-2">
+                    <span className="text-foreground text-sm font-medium">Restaurant Name</span>
                     <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
+                      type="text"
+                      name="restaurantName"
+                      value={formData.restaurantName}
                       onChange={handleInputChange}
-                      placeholder="3001234567"
-                      className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                        errors.phone ? "border-destructive" : "border-border"
-                      } bg-background`}
+                      className="form-input w-full rounded-xl border border-border bg-background text-foreground h-12 px-4 placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                      placeholder="Tasty Bites"
                     />
+                    {errors.restaurantName && <span className="text-destructive text-xs font-medium">{errors.restaurantName}</span>}
+                  </label>
+                  <label className="flex flex-col flex-1 gap-2">
+                    <span className="text-foreground text-sm font-medium">Owner Name</span>
+                    <input
+                      type="text"
+                      name="ownerName"
+                      value={formData.ownerName}
+                      onChange={handleInputChange}
+                      className="form-input w-full rounded-xl border border-border bg-background text-foreground h-12 px-4 placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                      placeholder="John Doe"
+                    />
+                    {errors.ownerName && <span className="text-destructive text-xs font-medium">{errors.ownerName}</span>}
+                  </label>
+                </div>
+
+                {/* Row 2 */}
+                <div className="flex flex-col md:flex-row gap-5">
+                  <label className="flex flex-col flex-1 gap-2">
+                    <span className="text-foreground text-sm font-medium">Work Email</span>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="form-input w-full rounded-xl border border-border bg-background text-foreground h-12 px-4 placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                      placeholder="contact@restaurant.com"
+                    />
+                    {errors.email && <span className="text-destructive text-xs font-medium">{errors.email}</span>}
+                  </label>
+                  <label className="flex flex-col flex-1 gap-2">
+                    <span className="text-foreground text-sm font-medium">Phone Number</span>
+                    <div className="flex gap-2">
+                      <select
+                        name="countryCode"
+                        value={formData.countryCode}
+                        onChange={handleInputChange}
+                        className="form-select w-[100px] rounded-xl border border-border bg-background text-foreground h-12 pl-3 pr-8 focus:border-primary focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+92">🇵🇰 +92</option>
+                        <option value="+61">🇦🇺 +61</option>
+                      </select>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className="form-input flex-1 rounded-xl border border-border bg-background text-foreground h-12 px-4 placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                        placeholder="(555) 000-0000"
+                      />
+                    </div>
+                    {errors.phone && <span className="text-destructive text-xs font-medium">{errors.phone}</span>}
+                  </label>
+                </div>
+
+                {/* Row 3 */}
+                <div className="flex flex-col md:flex-row gap-5">
+                  <label className="flex flex-col flex-1 gap-2">
+                    <span className="text-foreground text-sm font-medium">Cuisine Type</span>
+                    <select
+                      name="cuisine"
+                      value={formData.cuisine}
+                      onChange={handleInputChange}
+                      className="form-select w-full rounded-xl border border-border bg-background text-foreground h-12 px-4 focus:border-primary focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">Select cuisine...</option>
+                      <option>Italian</option>
+                      <option>American</option>
+                      <option>Japanese</option>
+                      <option>Mexican</option>
+                      <option>Indian</option>
+                      <option>Pakistani</option>
+                      <option>Chinese</option>
+                      <option>Fast Food</option>
+                      <option>Other</option>
+                    </select>
+                    {errors.cuisine && <span className="text-destructive text-xs font-medium">{errors.cuisine}</span>}
+                  </label>
+                  <label className="flex flex-col flex-[1.5] gap-2">
+                    <span className="text-foreground text-sm font-medium">Restaurant Address</span>
+                    <input
+                      type="text"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      className="form-input w-full rounded-xl border border-border bg-background text-foreground h-12 px-4 placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                      placeholder="123 Main St, City"
+                    />
+                    {errors.address && <span className="text-destructive text-xs font-medium">{errors.address}</span>}
+                  </label>
+                </div>
+
+                {/* Row 4: Password */}
+                <div className="flex flex-col gap-5 border-t border-border pt-5 mt-2">
+                  <div className="flex flex-col md:flex-row gap-5">
+                    <label className="flex flex-col flex-1 gap-2">
+                      <span className="text-foreground text-sm font-medium">Create Password</span>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className="form-input w-full rounded-xl border border-border bg-background text-foreground h-12 px-4 placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                        placeholder="••••••••"
+                      />
+                      {errors.password && <span className="text-destructive text-xs font-medium">{errors.password}</span>}
+                    </label>
+                    <label className="flex flex-col flex-1 gap-2">
+                      <span className="text-foreground text-sm font-medium">Confirm Password</span>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        className={`form-input w-full rounded-xl border ${errors.confirmPassword ? 'border-destructive bg-destructive/10' : 'border-border bg-background'} text-foreground h-12 px-4 placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-colors`}
+                        placeholder="••••••••"
+                      />
+                      {errors.confirmPassword && <span className="text-destructive text-xs font-medium">{errors.confirmPassword}</span>}
+                    </label>
                   </div>
-                  {errors.countryCode && <p className="text-destructive text-sm mt-1">{errors.countryCode}</p>}
-                  {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
-                </div>
 
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Cuisine Type</label>
-                  <select
-                    name="cuisine"
-                    value={formData.cuisine}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.cuisine ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  >
-                    <option value="">Select...</option>
-                    <option value="Pakistani">Pakistani</option>
-                    <option value="Chinese">Chinese</option>
-                    <option value="Italian">Italian</option>
-                    <option value="Fast Food">Fast Food</option>
-                  </select>
-                  {errors.cuisine && <p className="text-destructive text-sm mt-1">{errors.cuisine}</p>}
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Address</label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="Street address and city"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.address ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  />
-                  {errors.address && <p className="text-destructive text-sm mt-1">{errors.address}</p>}
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Password</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.password ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  />
-                  {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
+                  {/* Password Strength */}
                   {formData.password && (
-                    <div className="mt-2">
-                      <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${passwordInfo.color}`} style={{ width: `${passwordInfo.pct}%` }} />
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground font-medium">
+                          Password Strength: <span className={passwordInfo.color}>{passwordInfo.label}</span>
+                        </span>
                       </div>
-                      <p className={`text-xs mt-1 ${passwordInfo.color}`}>{passwordInfo.label}</p>
-                      {passwordInfo.suggestions.length > 0 && (
-                        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                          {passwordInfo.suggestions.slice(0, 3).map((s) => (
-                            <li key={s}>• {s}</li>
-                          ))}
-                        </ul>
-                      )}
+                      <div className="flex gap-2 h-1.5 w-full">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className={`h-full w-1/4 rounded-full ${i <= Math.ceil(passwordInfo.pct / 25) ? passwordInfo.color : 'bg-border'
+                              }`}
+                          ></div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Use 8 or more characters with a mix of letters, numbers & symbols.
+                      </p>
                     </div>
                   )}
                 </div>
 
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Confirm Password</label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.confirmPassword ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  />
-                  {errors.confirmPassword && <p className="text-destructive text-sm mt-1">{errors.confirmPassword}</p>}
+                {/* Actions */}
+                <div className="flex flex-col gap-4 mt-6">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex w-full items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-primary hover:brightness-110 text-primary-foreground text-base font-bold transition-all transform active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {isLoading ? "Registering..." : "Register Restaurant"}
+                  </button>
+                  <p className="text-center text-foreground text-sm font-medium">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={onSwitchToSignIn}
+                      className="text-primary hover:underline font-bold ml-1"
+                    >
+                      Sign In
+                    </button>
+                  </p>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-accent to-primary text-accent-foreground py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-6"
-              >
-                {isLoading ? "Registering..." : "Register Restaurant"}
-              </button>
-            </form>
-
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-muted-foreground">Already registered?</span>
-              </div>
+                {/* Terms */}
+                <p className="text-center text-xs text-muted-foreground mt-2">
+                  By clicking "Register Restaurant", you agree to our{" "}
+                  <a className="underline" href="#">Terms</a> and{" "}
+                  <a className="underline" href="#">Privacy Policy</a>.
+                </p>
+              </form>
             </div>
-
-            <button
-              onClick={onSwitchToSignIn}
-              className="w-full border-2 border-accent text-accent py-3 rounded-lg font-bold hover:bg-accent/5 transition-colors"
-            >
-              Sign In
-            </button>
           </div>
         </div>
       </div>
