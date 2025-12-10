@@ -9,6 +9,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth"
 import { setDoc, doc } from "firebase/firestore"
 import { sendWelcomeRestaurantEmail } from "@/lib/emailAPI"
 import { toast } from "sonner"
+import { isValidEmail, getPasswordStrength } from "@/lib/validation"
 
 export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuccess }) {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
     confirmPassword: "",
     restaurantName: "",
     ownerName: "",
+    countryCode: "+92",
     phone: "",
     address: "",
     cuisine: "",
@@ -34,17 +36,22 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
     }
   }
 
+  const passwordInfo = getPasswordStrength(formData.password)
+  const emailValid = formData.email ? isValidEmail(formData.email) : null
+
   const validateForm = () => {
     const newErrors = {}
     if (!formData.restaurantName.trim()) newErrors.restaurantName = "Restaurant name is required"
     if (!formData.ownerName.trim()) newErrors.ownerName = "Owner name is required"
     if (!formData.email.trim()) newErrors.email = "Email is required"
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email format"
+    else if (!isValidEmail(formData.email)) newErrors.email = "Invalid email format"
+    if (!formData.countryCode) newErrors.countryCode = "Country code is required"
     if (!formData.phone.trim()) newErrors.phone = "Phone is required"
+    else if (!/^\d{6,15}$/.test(formData.phone)) newErrors.phone = "Phone must be numeric (6-15 digits)"
     if (!formData.address.trim()) newErrors.address = "Address is required"
     if (!formData.cuisine) newErrors.cuisine = "Please select a cuisine type"
     if (!formData.password.trim()) newErrors.password = "Password is required"
-    else if (formData.password.length < 6) newErrors.password = "Must be at least 6 characters"
+    else if (formData.password.length < 8) newErrors.password = "Must be at least 8 characters"
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match"
     return newErrors
   }
@@ -65,11 +72,14 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
       
       // Save restaurant data to Firestore
       if (user) {
+        const fullPhone = `${formData.countryCode}${formData.phone}`
         await setDoc(doc(db, "users", user.uid), {
           email: formData.email,
           restaurantName: formData.restaurantName,
           ownerName: formData.ownerName,
-          phone: formData.phone,
+          phone: fullPhone,
+          countryCode: formData.countryCode,
+          phoneLocal: formData.phone,
           address: formData.address,
           cuisine: formData.cuisine,
           role: "restaurant",
@@ -94,7 +104,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
         role: "restaurant",
         restaurantName: formData.restaurantName,
         ownerName: formData.ownerName,
-        phone: formData.phone,
+        phone: `${formData.countryCode}${formData.phone}`,
         address: formData.address,
         cuisine: formData.cuisine,
       }
@@ -215,20 +225,44 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
                     } bg-background`}
                   />
                   {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
+                  {emailValid !== null && (
+                    <p className={`text-xs mt-1 ${emailValid ? 'text-green-600' : 'text-destructive'}`}>
+                      {emailValid ? 'Valid email' : 'Invalid email format'}
+                    </p>
+                  )}
                 </div>
+
+                
 
                 <div>
                   <label className="block text-sm font-semibold text-foreground mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="03001234567"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
-                      errors.phone ? "border-destructive" : "border-border"
-                    } bg-background`}
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      name="countryCode"
+                      value={formData.countryCode}
+                      onChange={handleInputChange}
+                      className={`w-28 px-3 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
+                        errors.countryCode ? "border-destructive" : "border-border"
+                      } bg-background`}
+                    >
+                      <option value="+92">+92 (PK)</option>
+                      <option value="+1">+1 (US)</option>
+                      <option value="+44">+44 (UK)</option>
+                      <option value="+61">+61 (AU)</option>
+                      <option value="+91">+91 (IN)</option>
+                    </select>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="3001234567"
+                      className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-accent transition-colors ${
+                        errors.phone ? "border-destructive" : "border-border"
+                      } bg-background`}
+                    />
+                  </div>
+                  {errors.countryCode && <p className="text-destructive text-sm mt-1">{errors.countryCode}</p>}
                   {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
                 </div>
 
@@ -279,6 +313,21 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
                     } bg-background`}
                   />
                   {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
+                  {formData.password && (
+                    <div className="mt-2">
+                      <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${passwordInfo.color}`} style={{ width: `${passwordInfo.pct}%` }} />
+                      </div>
+                      <p className={`text-xs mt-1 ${passwordInfo.color}`}>{passwordInfo.label}</p>
+                      {passwordInfo.suggestions.length > 0 && (
+                        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          {passwordInfo.suggestions.slice(0, 3).map((s) => (
+                            <li key={s}>• {s}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="col-span-2">

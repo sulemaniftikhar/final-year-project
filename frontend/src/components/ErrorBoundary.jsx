@@ -72,12 +72,12 @@ class ErrorBoundary extends React.Component {
               >
                 Reload Page
               </button>
-              <button
-                onClick={() => (window.location.href = "/")}
-                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-all duration-200"
+              <a
+                href="/"
+                className="inline-flex items-center justify-center px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-all duration-200"
               >
                 Go to Home
-              </button>
+              </a>
             </div>
 
             {/* Help Text */}

@@ -3,6 +3,7 @@
 // Reference: SRS 3.2.1 - User Account and Authentication (FR-02)
 
 import { useState } from "react"
+import { isValidEmail } from "@/lib/validation"
 import { useAuth } from "@/context/AuthContext"
 import { auth } from "@/lib/firebase"
 import { signInWithEmailAndPassword } from "firebase/auth"
@@ -24,6 +25,8 @@ export default function RestaurantSignIn({ onBack, onSwitchToSignUp, onLoginSucc
       setErrors((prev) => ({ ...prev, [name]: "" }))
     }
   }
+
+  const emailValid = formData.email ? isValidEmail(formData.email) : null
 
   const validateForm = () => {
     const newErrors = {}
@@ -139,6 +142,11 @@ export default function RestaurantSignIn({ onBack, onSwitchToSignUp, onLoginSucc
                   } bg-background`}
                 />
                 {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
+                {emailValid !== null && (
+                  <p className={`text-xs mt-1 ${emailValid ? 'text-green-600' : 'text-destructive'}`}>
+                    {emailValid ? 'Valid email' : 'Invalid email format'}
+                  </p>
+                )}
               </div>
 
               <div>

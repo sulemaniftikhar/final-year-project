@@ -1,10 +1,12 @@
 
 import { useState } from "react"
 import { useAuth } from "@/context/AuthContext"
+import { useNavigate } from 'react-router-dom'
 
 export default function Navbar({ onCustomerClick, onRestaurantClick, onLoginClick, onSignUpClick, onAdminClick }) {
   const { user, logout, isAuthenticated } = useAuth()
   const [showMenu, setShowMenu] = useState(false)
+  const navigate = useNavigate()
 
   return (
     <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border shadow-sm sticky top-0 z-50">
@@ -12,7 +14,7 @@ export default function Navbar({ onCustomerClick, onRestaurantClick, onLoginClic
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div
-            onClick={() => (window.location.href = "/")}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
           >
             <div className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext"
 import { auth } from "@/lib/firebase"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { toast } from "sonner"
+import { isValidEmail } from "@/lib/validation"
 
 export default function CustomerSignIn({ onBack, onSwitchToSignUp, onLoginSuccess }) {
   const [formData, setFormData] = useState({
@@ -25,6 +26,8 @@ export default function CustomerSignIn({ onBack, onSwitchToSignUp, onLoginSucces
       setErrors((prev) => ({ ...prev, [name]: "" }))
     }
   }
+
+  const emailValid = formData.email ? isValidEmail(formData.email) : null
 
   const validateForm = () => {
     const newErrors = {}
@@ -155,6 +158,11 @@ export default function CustomerSignIn({ onBack, onSwitchToSignUp, onLoginSucces
                   } bg-background`}
                 />
                 {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
+                {emailValid !== null && (
+                  <p className={`text-xs mt-1 ${emailValid ? 'text-green-600' : 'text-destructive'}`}>
+                    {emailValid ? 'Valid email' : 'Invalid email format'}
+                  </p>
+                )}
               </div>
 
               {/* Password */}
