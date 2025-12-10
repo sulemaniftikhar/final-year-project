@@ -58,11 +58,6 @@ function CustomerDashboardContent({ isDemo }) {
   if (selectedRestaurant) {
     return (
       <>
-        <div className="mb-6">
-          <button onClick={() => setSelectedRestaurant(null)} className="flex items-center gap-2 text-primary hover:underline font-bold">
-            <Icon icon="lucide:arrow-left" /> Back to Browse
-          </button>
-        </div>
         <RestaurantMenu
           restaurantId={selectedRestaurant}
           onOrder={handleOrderCheckout}

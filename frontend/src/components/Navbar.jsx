@@ -51,14 +51,13 @@ export default function Navbar({ onCustomerClick, onRestaurantClick, onLoginClic
           {/* Right - User Actions */}
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold text-foreground hidden sm:inline">{user?.name}</span>
-                <button
-                  onClick={logout}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold shadow-md"
-                >
-                  Logout
-                </button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center text-white font-bold text-sm">
+                    {user?.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm font-semibold text-foreground hidden sm:inline">{user?.name}</span>
+                </div>
               </div>
             ) : (
               <div className="hidden md:flex gap-3">
