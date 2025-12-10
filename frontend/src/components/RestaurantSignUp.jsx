@@ -10,6 +10,7 @@ import { setDoc, doc } from "firebase/firestore"
 import { sendWelcomeRestaurantEmail } from "@/lib/emailAPI"
 import { toast } from "sonner"
 import { isValidEmail, getPasswordStrength } from "@/lib/validation"
+import { saveRestaurant } from "@/lib/supabase";
 
 export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuccess }) {
   const [formData, setFormData] = useState({
@@ -72,7 +73,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
       
       // Save restaurant data to Firestore
       if (user) {
-        const fullPhone = `${formData.countryCode}${formData.phone}`
+        const fullPhone = `${formData.countryCode}${formData.phone}`;
         await setDoc(doc(db, "users", user.uid), {
           email: formData.email,
           restaurantName: formData.restaurantName,
@@ -84,7 +85,19 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
           cuisine: formData.cuisine,
           role: "restaurant",
           createdAt: new Date().toISOString(),
-        })
+        });
+
+        // Save to Supabase (NEW)
+        await saveRestaurant(user.uid, {
+          email: formData.email,
+          restaurantName: formData.restaurantName,
+          ownerName: formData.ownerName,
+          phone: fullPhone,
+          countryCode: formData.countryCode,
+          phoneLocal: formData.phone,
+          address: formData.address,
+          cuisine: formData.cuisine,
+        });
       }
       
 
