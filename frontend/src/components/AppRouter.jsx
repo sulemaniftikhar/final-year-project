@@ -2,8 +2,9 @@
 // App Router - Manages all page navigation and authentication flow
 // Reference: SRS 3.2.1, 3.2.6 - Navigation and dashboards
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom'
 
 import Navbar from "./Navbar"
 import HomePage from "./HomePage"
@@ -16,179 +17,55 @@ import RestaurantSignIn from "./RestaurantSignIn"
 import RestaurantSignUp from "./RestaurantSignUp"
 import AdminSignIn from "./AdminSignIn"
 import AuthChoice from "./AuthChoice"
+import RestaurantMenu from "./RestaurantMenu"
 
 export default function AppRouter() {
-  const { user, isAuthenticated, userRole } = useAuth()
-
-  // Current page state
-  const [currentPage, setCurrentPage] = useState("home")
-
-  // Auth sub-page state for customer/restaurant auth
-  const [authMode, setAuthMode] = useState("choice") // 'choice', 'customerSignIn', 'customerSignUp', 'restaurantSignIn', 'restaurantSignUp'
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      if (userRole === "customer") {
-        setCurrentPage("customerDash")
-      } else if (userRole === "restaurant") {
-        setCurrentPage("restaurantDash")
-      } else if (userRole === "admin") {
-        setCurrentPage("adminDash")
-      }
-    } else {
-      setCurrentPage("home")
-      setAuthMode("choice")
-    }
-  }, [isAuthenticated, userRole, user])
+    // if auth changes elsewhere the app can react here if needed
+  }, [isAuthenticated])
 
-  const handleCustomerClick = () => {
-    setCurrentPage("customerDash")
-  }
+  const goCustomer = () => navigate('/customer')
+  const goRestaurant = () => navigate('/restaurant')
+  const goLogin = () => navigate('/auth')
+  const goSignUp = () => navigate('/auth')
+  const goAdmin = () => navigate('/auth/admin')
 
-  const handleRestaurantClick = () => {
-    setCurrentPage("restaurantDash")
-  }
+  const CustomerMenuWrapper = () => <CustomerDashboard onBack={() => navigate('/')} isDemo={!isAuthenticated} />
+  const RestaurantMenuWrapper = () => <RestaurantDashboard onBack={() => navigate('/')} isDemo={!isAuthenticated} />
+  const AdminWrapper = () => <AdminDashboard />
 
-  const handleLoginClick = () => {
-    setCurrentPage("auth")
-    setAuthMode("choiceLogin")
-  }
-
-  const handleSignUpClick = () => {
-    setCurrentPage("auth")
-    setAuthMode("choiceSignUp")
-  }
-
-  const handleAdminClick = () => {
-    setCurrentPage("auth")
-    setAuthMode("adminSignIn")
-  }
-
-  const handleBackToHome = () => {
-    setCurrentPage("home")
-    setAuthMode("choice")
-  }
-
-  const handleCustomerSignIn = () => {
-    setAuthMode("customerSignIn")
-  }
-
-  const handleCustomerSignUp = () => {
-    setAuthMode("customerSignUp")
-  }
-
-  const handleRestaurantSignIn = () => {
-    setAuthMode("restaurantSignIn")
-  }
-
-  const handleRestaurantSignUp = () => {
-    setAuthMode("restaurantSignUp")
-  }
-
-  const handleAuthBack = () => {
-    setCurrentPage("home")
-    setAuthMode("choice")
-  }
-
-  const handleLoginSuccess = (role) => {
-    if (role === "customer") {
-      setCurrentPage("customerDash")
-    } else if (role === "restaurant") {
-      setCurrentPage("restaurantDash")
-    }
-  }
-
-  const handleSignupSuccess = (role) => {
-    if (role === "customer") {
-      setCurrentPage("customerDash")
-    } else if (role === "restaurant") {
-      setCurrentPage("restaurantDash")
-    }
+  function RestaurantMenuRoute() {
+    const params = useParams()
+    return <RestaurantMenu restaurantId={params.restaurantId} onBack={() => navigate(-1)} />
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {currentPage !== "auth" && currentPage !== "adminDash" && (
-        <Navbar
-          onCustomerClick={handleCustomerClick}
-          onRestaurantClick={handleRestaurantClick}
-          onLoginClick={handleLoginClick}
-          onSignUpClick={handleSignUpClick}
-          onAdminClick={handleAdminClick}
-        />
-      )}
+      <Navbar
+        onCustomerClick={goCustomer}
+        onRestaurantClick={goRestaurant}
+        onLoginClick={goLogin}
+        onSignUpClick={goSignUp}
+        onAdminClick={goAdmin}
+      />
 
-      {/* Home Page */}
-      {currentPage === "home" && (
-        <HomePage 
-          onCustomerClick={handleCustomerClick}
-          onRestaurantClick={handleRestaurantClick}
-          onLoginClick={handleLoginClick}
-          onSignUpClick={handleSignUpClick}
-        />
-      )}
-
-      {/* Customer Dashboard */}
-      {currentPage === "customerDash" && <CustomerDashboard onBack={handleBackToHome} isDemo={!isAuthenticated} />}
-
-      {/* Restaurant Dashboard */}
-      {currentPage === "restaurantDash" && <RestaurantDashboard onBack={handleBackToHome} isDemo={!isAuthenticated} />}
-
-      {/* Admin Dashboard */}
-      {currentPage === "adminDash" && <AdminDashboard />}
-
-      {/* Admin Sign In */}
-      {currentPage === "auth" && authMode === "adminSignIn" && <AdminSignIn onBack={handleAuthBack} />}
-
-      {/* Auth Pages - Login Flow */}
-      {currentPage === "auth" && authMode === "choiceLogin" && (
-        <AuthChoice
-          onCustomerChoice={handleCustomerSignIn}
-          onRestaurantChoice={handleRestaurantSignIn}
-          onBack={handleAuthBack}
-        />
-      )}
-
-      {/* Auth Pages - SignUp Flow */}
-      {currentPage === "auth" && authMode === "choiceSignUp" && (
-        <AuthChoice
-          onCustomerChoice={handleCustomerSignUp}
-          onRestaurantChoice={handleRestaurantSignUp}
-          onBack={handleAuthBack}
-        />
-      )}
-
-      {currentPage === "auth" && authMode === "customerSignIn" && (
-        <CustomerSignIn
-          onBack={handleAuthBack}
-          onSwitchToSignUp={handleCustomerSignUp}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      )}
-
-      {currentPage === "auth" && authMode === "customerSignUp" && (
-        <CustomerSignUp
-          onBack={handleAuthBack}
-          onSwitchToSignIn={handleCustomerSignIn}
-          onSignupSuccess={handleSignupSuccess}
-        />
-      )}
-
-      {currentPage === "auth" && authMode === "restaurantSignIn" && (
-        <RestaurantSignIn
-          onBack={handleAuthBack}
-          onSwitchToSignUp={handleRestaurantSignUp}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      )}
-
-      {currentPage === "auth" && authMode === "restaurantSignUp" && (
-        <RestaurantSignUp
-          onBack={handleAuthBack}
-          onSwitchToSignIn={handleRestaurantSignIn}
-          onSignupSuccess={handleSignupSuccess}
-        />
-      )}
+      <Routes>
+        <Route path="/" element={<HomePage onCustomerClick={goCustomer} onRestaurantClick={goRestaurant} onLoginClick={goLogin} onSignUpClick={goSignUp} />} />
+        <Route path="/customer" element={<CustomerMenuWrapper />} />
+        <Route path="/restaurant" element={<RestaurantMenuWrapper />} />
+        <Route path="/admin" element={<AdminWrapper />} />
+        <Route path="/auth/admin" element={<AdminSignIn onBack={() => navigate('/')} />} />
+        <Route path="/auth" element={<AuthChoice onCustomerChoice={() => navigate('/auth/customer/signin')} onRestaurantChoice={() => navigate('/auth/restaurant/signin')} onBack={() => navigate('/')} />} />
+        <Route path="/auth/customer/signin" element={<CustomerSignIn onBack={() => navigate('/auth')} onSwitchToSignUp={() => navigate('/auth/customer/signup')} onLoginSuccess={() => navigate('/customer')} />} />
+        <Route path="/auth/customer/signup" element={<CustomerSignUp onBack={() => navigate('/auth')} onSwitchToSignIn={() => navigate('/auth/customer/signin')} onSignupSuccess={() => navigate('/customer')} />} />
+        <Route path="/auth/restaurant/signin" element={<RestaurantSignIn onBack={() => navigate('/auth')} onSwitchToSignUp={() => navigate('/auth/restaurant/signup')} onLoginSuccess={() => navigate('/restaurant')} />} />
+        <Route path="/auth/restaurant/signup" element={<RestaurantSignUp onBack={() => navigate('/auth')} onSwitchToSignIn={() => navigate('/auth/restaurant/signin')} onSignupSuccess={() => navigate('/restaurant')} />} />
+        <Route path="/generate/:restaurantId" element={<RestaurantMenuRoute />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   )
 }

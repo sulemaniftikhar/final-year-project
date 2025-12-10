@@ -4,6 +4,7 @@
 // This context provides user info and auth methods to all components
 
 import { createContext, useState, useContext, useEffect } from "react"
+import { useNavigate } from 'react-router-dom'
 
 // Create the context
 const AuthContext = createContext()
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
 
   // Loading state during auth operations
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user")
@@ -56,7 +58,13 @@ export function AuthProvider({ children }) {
     setUserRole(null)
     localStorage.removeItem("user")
     // Force app to recognize logout immediately
-    window.location.href = "/"
+    try {
+      // useNavigate hook is available because AuthProvider is rendered inside BrowserRouter
+      navigate('/')
+    } catch (e) {
+      // fallback
+      window.location.href = '/'
+    }
   }
 
   // Check if user is authenticated
