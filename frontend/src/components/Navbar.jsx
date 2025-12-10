@@ -78,8 +78,8 @@ export default function Navbar({ onCustomerClick, onRestaurantClick, onLoginClic
             )}
 
             {/* Mobile Menu Button */}
-            <button 
-              onClick={() => setShowMenu(!showMenu)} 
+            <button
+              onClick={() => setShowMenu(!showMenu)}
               className="md:hidden text-foreground text-2xl focus:outline-none hover:text-primary transition-colors"
               aria-label="Toggle menu"
             >
@@ -110,6 +110,15 @@ export default function Navbar({ onCustomerClick, onRestaurantClick, onLoginClic
                   className="block w-full text-left px-4 py-3 hover:bg-muted text-foreground font-semibold transition-colors"
                 >
                   🏪 Restaurant Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    if (onAdminClick) onAdminClick()
+                    setShowMenu(false)
+                  }}
+                  className="block w-full text-left px-4 py-3 hover:bg-muted text-foreground font-semibold transition-colors"
+                >
+                  🔐 Admin Dashboard
                 </button>
               </>
             )}
