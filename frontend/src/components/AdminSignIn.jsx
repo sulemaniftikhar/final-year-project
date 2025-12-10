@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import { useAuth } from "@/context/AuthContext"
+import { useNavigate } from "react-router-dom"
 
 export default function AdminSignIn({ onBack }) {
   const { login } = useAuth()
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -32,8 +34,8 @@ export default function AdminSignIn({ onBack }) {
 
     setIsLoading(true)
 
-    // Admin credentials validation (Mock)
-    if (formData.email === "admin@orderiq.com" && formData.password === "admin123") {
+    // Admin credentials validation
+    if (formData.email === "admin@orderiq.com" && formData.password === "admin1234") {
       const adminData = {
         id: "admin1",
         email: "admin@orderiq.com",
@@ -42,6 +44,7 @@ export default function AdminSignIn({ onBack }) {
         isAuthenticated: true
       }
       login(adminData)
+      navigate('/admin') // Navigate to admin dashboard
     } else {
       setError("Invalid admin credentials")
       setIsLoading(false)
@@ -150,7 +153,7 @@ export default function AdminSignIn({ onBack }) {
                 Restricted access. Authorized personnel only.
               </p>
               <div className="mt-4 inline-block px-3 py-1 bg-white/5 rounded text-xs text-slate-400">
-                Demo: admin@orderiq.com / admin123
+                Demo: admin@orderiq.com / admin1234
               </div>
             </div>
           </div>
