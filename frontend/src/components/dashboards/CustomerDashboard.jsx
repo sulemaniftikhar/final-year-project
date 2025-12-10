@@ -1,43 +1,74 @@
-import { useState, useEffect } from "react"
-import { useAuth } from "@/context/AuthContext"
-import { useData } from "@/context/DataContext"
-import { useDashboard } from "@/context/DashboardContext"
-import DashboardLayout from "@/components/layouts/DashboardLayout"
-import RestaurantMenu from "../RestaurantMenu"
-import CustomerProfile from "../profiles/CustomerProfile"
-import { Icon } from '@iconify/react'
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useData } from "@/context/DataContext";
+import { useDashboard } from "@/context/DashboardContext";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
+import RestaurantMenu from "../RestaurantMenu";
+import CustomerProfile from "../profiles/CustomerProfile";
+import { Icon } from "@iconify/react";
+import { getCustomer } from "@/lib/supabase";
 
 function CustomerDashboardContent({ isDemo }) {
-  const { user } = useAuth()
-  const { getCustomerOrders, getCustomerLoyaltyPoints, getAllRestaurants, addOrder } = useData()
-  const { activeView, setActiveView } = useDashboard()
+  const { user } = useAuth();
+  const {
+    getCustomerOrders,
+    getCustomerLoyaltyPoints,
+    getAllRestaurants,
+    addOrder,
+  } = useData();
+  const { activeView, setActiveView } = useDashboard();
 
-  const customerId = isDemo ? "demo-customer" : user?.id
-  const customerOrders = getCustomerOrders(customerId)
-  const loyaltyPoints = getCustomerLoyaltyPoints(customerId)
-  const allRestaurants = getAllRestaurants()
+  const customerId = isDemo ? "demo-customer" : user?.id;
+  const customerOrders = getCustomerOrders(customerId);
+  const loyaltyPoints = getCustomerLoyaltyPoints(customerId);
+  const allRestaurants = getAllRestaurants();
 
   // Map activeView to internal tabs if needed, or just use activeView directly
   // Default to 'browse' if view is generic
-  const currentTab = ['browse', 'orders', 'rewards', 'profile'].includes(activeView) ? activeView : 'browse'
+  const currentTab = ["browse", "orders", "rewards", "profile"].includes(
+    activeView
+  )
+    ? activeView
+    : "browse";
 
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false)
-  const [pendingOrder, setPendingOrder] = useState(null)
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(null);
+
+  const [customerData, setCustomerData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      if (user?.id && !isDemo) {
+        try {
+          const data = await getCustomer(user.id);
+          setCustomerData(data);
+        } catch (error) {
+          console.error("Failed to fetch customer data:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    fetchCustomerData();
+  }, [user?.id, isDemo]);
 
   // Reset selected restaurant when view changes
   useEffect(() => {
-    setSelectedRestaurant(null)
-  }, [activeView])
+    setSelectedRestaurant(null);
+  }, [activeView]);
 
   const handleOrderCheckout = (orderData) => {
     if (isDemo) {
-      alert("Please login to place an order")
-      return
+      alert("Please login to place an order");
+      return;
     }
-    setPendingOrder(orderData)
-    setShowCheckoutModal(true)
-  }
+    setPendingOrder(orderData);
+    setShowCheckoutModal(true);
+  };
 
   const confirmOrder = () => {
     if (pendingOrder) {
@@ -46,14 +77,14 @@ function CustomerDashboardContent({ isDemo }) {
         ...pendingOrder,
         status: "pending",
         loyaltyPoints: Math.floor(pendingOrder.totalPrice / 100),
-      })
-      setPendingOrder(null)
-      setShowCheckoutModal(false)
-      setSelectedRestaurant(null)
-      setActiveView("orders")
-      alert("Order placed successfully! Check your orders.")
+      });
+      setPendingOrder(null);
+      setShowCheckoutModal(false);
+      setSelectedRestaurant(null);
+      setActiveView("orders");
+      alert("Order placed successfully! Check your orders.");
     }
-  }
+  };
 
   if (selectedRestaurant) {
     return (
@@ -67,7 +98,9 @@ function CustomerDashboardContent({ isDemo }) {
         {showCheckoutModal && pendingOrder && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
-              <h2 className="text-2xl font-bold text-foreground mb-4">Confirm Order</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-4">
+                Confirm Order
+              </h2>
 
               <div className="bg-muted rounded-lg p-4 mb-6 max-h-48 overflow-y-auto">
                 {pendingOrder.items.map((item) => (
@@ -75,7 +108,9 @@ function CustomerDashboardContent({ isDemo }) {
                     <span>
                       {item.quantity}x {item.name}
                     </span>
-                    <span className="font-semibold">Rs. {item.price * item.quantity}</span>
+                    <span className="font-semibold">
+                      Rs. {item.price * item.quantity}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -91,7 +126,9 @@ function CustomerDashboardContent({ isDemo }) {
                 </div>
                 <div className="flex justify-between mb-3 border-t border-white/30 pt-2">
                   <span className="font-bold">Total:</span>
-                  <span className="font-bold">Rs. {pendingOrder.totalPrice + 100}</span>
+                  <span className="font-bold">
+                    Rs. {pendingOrder.totalPrice + 100}
+                  </span>
                 </div>
               </div>
 
@@ -113,12 +150,14 @@ function CustomerDashboardContent({ isDemo }) {
           </div>
         )}
       </>
-    )
+    );
   }
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-foreground capitalize">{currentTab.replace('-', ' ')}</h1>
+      <h1 className="text-3xl font-bold text-foreground capitalize">
+        {currentTab.replace("-", " ")}
+      </h1>
 
       {/* Browse Restaurants Tab */}
       {currentTab === "browse" && (
@@ -131,18 +170,35 @@ function CustomerDashboardContent({ isDemo }) {
             >
               <div className="h-40 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative">
                 {/* Placeholder or Image */}
-                <Icon icon="lucide:utensils" className="text-4xl text-primary/50" />
-                {restaurant.image && <img src={restaurant.image} className="absolute inset-0 w-full h-full object-cover" alt={restaurant.name} />}
+                <Icon
+                  icon="lucide:utensils"
+                  className="text-4xl text-primary/50"
+                />
+                {restaurant.image && (
+                  <img
+                    src={restaurant.image}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    alt={restaurant.name}
+                  />
+                )}
               </div>
               <div className="p-4">
-                <h3 className="font-bold text-lg text-foreground mb-1">{restaurant.name}</h3>
-                <p className="text-sm text-accent font-semibold mb-2">{restaurant.cuisine}</p>
+                <h3 className="font-bold text-lg text-foreground mb-1">
+                  {restaurant.name}
+                </h3>
+                <p className="text-sm text-accent font-semibold mb-2">
+                  {restaurant.cuisine}
+                </p>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-1">
                     <span className="text-yellow-500">⭐</span>
-                    <span className="font-bold text-foreground">{restaurant.rating}</span>
+                    <span className="font-bold text-foreground">
+                      {restaurant.rating}
+                    </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">{restaurant.totalOrders} orders</span>
+                  <span className="text-sm text-muted-foreground">
+                    {restaurant.totalOrders} orders
+                  </span>
                 </div>
               </div>
             </div>
@@ -156,19 +212,27 @@ function CustomerDashboardContent({ isDemo }) {
           {customerOrders.length > 0 ? (
             <div className="divide-y divide-border">
               {customerOrders.map((order) => (
-                <div key={order.id} className="p-6 hover:bg-muted/50 transition-colors">
+                <div
+                  key={order.id}
+                  className="p-6 hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="font-bold text-lg text-foreground">Order #{order.id}</p>
-                      <p className="text-sm text-muted-foreground">{order.createdAt.toLocaleDateString()}</p>
+                      <p className="font-bold text-lg text-foreground">
+                        Order #{order.id}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {order.createdAt.toLocaleDateString()}
+                      </p>
                     </div>
                     <span
-                      className={`px-4 py-2 rounded-full text-sm font-bold ${order.status === "delivered"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : order.status === "pending"
+                      className={`px-4 py-2 rounded-full text-sm font-bold ${
+                        order.status === "delivered"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : order.status === "pending"
                           ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
                           : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                        }`}
+                      }`}
                     >
                       {order.status.toUpperCase()}
                     </span>
@@ -181,9 +245,13 @@ function CustomerDashboardContent({ isDemo }) {
                     ))}
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t border-border">
-                    <p className="font-bold text-lg text-foreground">Total: Rs. {order.totalPrice}</p>
+                    <p className="font-bold text-lg text-foreground">
+                      Total: Rs. {order.totalPrice}
+                    </p>
                     {order.status === "delivered" && (
-                      <p className="text-sm text-accent font-bold">+{order.loyaltyPoints} points</p>
+                      <p className="text-sm text-accent font-bold">
+                        +{order.loyaltyPoints} points
+                      </p>
                     )}
                   </div>
                 </div>
@@ -193,7 +261,7 @@ function CustomerDashboardContent({ isDemo }) {
             <div className="p-12 text-center">
               <p className="text-2xl text-muted-foreground">📭 No orders yet</p>
               <button
-                onClick={() => setActiveView('browse')}
+                onClick={() => setActiveView("browse")}
                 className="mt-4 text-primary hover:underline font-bold"
               >
                 Start by browsing restaurants
@@ -208,11 +276,17 @@ function CustomerDashboardContent({ isDemo }) {
         <div className="bg-gradient-to-r from-primary to-accent rounded-xl shadow-lg p-8 text-white relative overflow-hidden">
           <div className="relative z-10 text-center">
             <p className="text-6xl font-bold mb-4">{loyaltyPoints}</p>
-            <h3 className="text-3xl font-bold mb-2">Loyalty Points Available</h3>
-            <p className="text-lg opacity-90 mb-6">Earn 1 point for every 100 rupees spent</p>
+            <h3 className="text-3xl font-bold mb-2">
+              Loyalty Points Available
+            </h3>
+            <p className="text-lg opacity-90 mb-6">
+              Earn 1 point for every 100 rupees spent
+            </p>
 
             <div className="bg-white/20 border-2 border-white/40 rounded-lg p-4 mb-6 backdrop-blur-sm">
-              <p className="font-semibold">🎁 Referral Program: Invite friends and earn 50 bonus points!</p>
+              <p className="font-semibold">
+                🎁 Referral Program: Invite friends and earn 50 bonus points!
+              </p>
             </div>
 
             {!isDemo ? (
@@ -220,17 +294,17 @@ function CustomerDashboardContent({ isDemo }) {
                 Redeem Rewards
               </button>
             ) : (
-              <div className="text-white/80 font-bold">Login to redeem rewards</div>
+              <div className="text-white/80 font-bold">
+                Login to redeem rewards
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {currentTab === 'profile' && (
-        <CustomerProfile />
-      )}
+      {currentTab === "profile" && <CustomerProfile />}
     </div>
-  )
+  );
 }
 
 export default function CustomerDashboard(props) {
@@ -238,5 +312,5 @@ export default function CustomerDashboard(props) {
     <DashboardLayout>
       <CustomerDashboardContent {...props} />
     </DashboardLayout>
-  )
+  );
 }

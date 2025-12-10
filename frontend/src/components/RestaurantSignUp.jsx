@@ -9,7 +9,7 @@ import { setDoc, doc } from "firebase/firestore"
 import { sendWelcomeRestaurantEmail } from "@/lib/emailAPI"
 import { toast } from "sonner"
 import { isValidEmail, getPasswordStrength } from "@/lib/validation"
-import { Icon } from "@iconify/react"
+import { saveRestaurant } from "@/lib/supabase";
 
 export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuccess }) {
   const [formData, setFormData] = useState({
@@ -69,7 +69,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
       const user = auth.currentUser
 
       if (user) {
-        const fullPhone = `${formData.countryCode}${formData.phone}`
+        const fullPhone = `${formData.countryCode}${formData.phone}`;
         await setDoc(doc(db, "users", user.uid), {
           email: formData.email,
           name: formData.ownerName,
@@ -79,7 +79,19 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
           cuisine: formData.cuisine,
           role: "restaurant",
           createdAt: new Date().toISOString(),
-        })
+        });
+
+        // Save to Supabase (NEW)
+        await saveRestaurant(user.uid, {
+          email: formData.email,
+          restaurantName: formData.restaurantName,
+          ownerName: formData.ownerName,
+          phone: fullPhone,
+          countryCode: formData.countryCode,
+          phoneLocal: formData.phone,
+          address: formData.address,
+          cuisine: formData.cuisine,
+        });
       }
 
       try {
