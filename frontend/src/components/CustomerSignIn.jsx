@@ -4,8 +4,9 @@
 
 import { useState } from "react"
 import { useAuth } from "@/context/AuthContext"
-import { auth } from "@/lib/firebase"
+import { auth, db } from "@/lib/firebase"
 import { signInWithEmailAndPassword } from "firebase/auth"
+import { doc, getDoc } from "firebase/firestore"
 import { toast } from "sonner"
 import { isValidEmail } from "@/lib/validation"
 
@@ -51,17 +52,46 @@ export default function CustomerSignIn({ onBack, onSwitchToSignUp, onLoginSucces
       await signInWithEmailAndPassword(auth, formData.email, formData.password)
       const user = auth.currentUser
       
+      // Fetch user data from Firestore to verify role
+      const userDocRef = doc(db, "users", user.uid)
+      const userDoc = await getDoc(userDocRef)
+      
+      if (!userDoc.exists()) {
+        await auth.signOut()
+        toast.error("Account not found. Please sign up first.", {
+          position: "top-center",
+        })
+        setErrors({ submit: "Account not found" })
+        setIsLoading(false)
+        return
+      }
+
+      const userDataFromDb = userDoc.data()
+      
+      // Check if user role is customer
+      if (userDataFromDb.role !== "customer") {
+        await auth.signOut()
+        toast.error(`This is a ${userDataFromDb.role} account. Please use the ${userDataFromDb.role} sign-in page.`, {
+          position: "top-center",
+        })
+        setErrors({ submit: `Wrong login portal. This is a ${userDataFromDb.role} account.` })
+        setIsLoading(false)
+        return
+      }
+      
       // Show success toast
       toast.success("User logged in successfully!", {
         position: "top-center",
       })
 
-      // Create user data object
+      // Create user data object from Firestore data
       const userData = {
         id: user.uid,
-        email: formData.email,
-        role: "customer",
-        name: user.displayName || formData.email.split("@")[0],
+        email: userDataFromDb.email,
+        role: userDataFromDb.role,
+        name: userDataFromDb.name || formData.email.split("@")[0],
+        phone: userDataFromDb.phone,
+        address: userDataFromDb.address,
         isAuthenticated: true,
       }
       login(userData)

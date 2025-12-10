@@ -266,7 +266,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
                   {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
                 </div>
 
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-semibold text-foreground mb-2">Cuisine Type</label>
                   <select
                     name="cuisine"
