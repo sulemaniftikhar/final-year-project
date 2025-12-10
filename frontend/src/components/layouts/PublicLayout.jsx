@@ -6,7 +6,9 @@ export default function PublicLayout({
     onRestaurantClick,
     onLoginClick,
     onSignUpClick,
-    onAdminClick
+    onAdminClick,
+    searchQuery,
+    onSearchChange
 }) {
     return (
         <div className="min-h-screen bg-background">
@@ -16,6 +18,8 @@ export default function PublicLayout({
                 onLoginClick={onLoginClick}
                 onSignUpClick={onSignUpClick}
                 onAdminClick={onAdminClick}
+                searchQuery={searchQuery}
+                onSearchChange={onSearchChange}
             />
             {children}
         </div>

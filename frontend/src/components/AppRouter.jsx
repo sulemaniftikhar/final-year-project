@@ -2,7 +2,7 @@
 // App Router - Manages all page navigation and authentication flow
 // Reference: SRS 3.2.1, 3.2.6 - Navigation and dashboards
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom'
 
@@ -24,6 +24,7 @@ import RestaurantMenu from "./RestaurantMenu"
 export default function AppRouter() {
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     // if auth changes elsewhere the app can react here if needed
@@ -56,8 +57,17 @@ export default function AppRouter() {
             onLoginClick={goLogin}
             onSignUpClick={goSignUp}
             onAdminClick={goAdmin}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           >
-            <HomePage onCustomerClick={goCustomer} onRestaurantClick={goRestaurant} onLoginClick={goLogin} onSignUpClick={goSignUp} />
+            <HomePage
+              onCustomerClick={goCustomer}
+              onRestaurantClick={goRestaurant}
+              onLoginClick={goLogin}
+              onSignUpClick={goSignUp}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
           </PublicLayout>
         } />
         <Route path="/customer" element={<CustomerMenuWrapper />} />

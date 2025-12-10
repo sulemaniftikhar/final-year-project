@@ -18,7 +18,7 @@ export default function CustomerSignUp({
     password: "",
     confirmPassword: "",
     fullName: "",
-    countryCode: "+92",
+    countryCode: "+1",
     phone: "",
   });
 
@@ -79,10 +79,8 @@ export default function CustomerSignUp({
         const fullPhone = `${formData.countryCode}${formData.phone}`;
         await setDoc(doc(db, "users", user.uid), {
           email: formData.email,
-          fullName: formData.fullName,
+          name: formData.fullName,
           phone: fullPhone,
-          countryCode: formData.countryCode,
-          phoneLocal: formData.phone,
           role: "customer",
           createdAt: new Date().toISOString(),
         });
@@ -106,7 +104,6 @@ export default function CustomerSignUp({
         // Don't block signup if email fails
       }
 
-      // Create user data object
       const userData = {
         id: user.uid,
         email: formData.email,
@@ -152,15 +149,24 @@ export default function CustomerSignUp({
             Back to OrderIQ
           </button>
         </div>
-      </div>
+        <button
+          onClick={onBack}
+          className="flex min-w-[84px] items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-background hover:bg-muted transition-colors text-foreground text-sm font-bold"
+        >
+          <span className="truncate">Back to OrderIQ</span>
+        </button>
+      </header>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Left Side - Hero Content */}
-          <div className="hidden md:block">
-            <h1 className="text-5xl font-bold text-foreground mb-6">
-              Join <span className="text-primary">OrderIQ</span> Today
+      <main className="flex-1 flex flex-col lg:flex-row">
+        {/* Left Column: Hero/Marketing */}
+        <div className="lg:w-5/12 xl:w-1/2 p-6 lg:p-12 xl:p-20 flex flex-col justify-center bg-background relative overflow-hidden">
+          {/* Decorative background */}
+          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 10% 20%, #2bee79 0%, transparent 20%), radial-gradient(circle at 90% 80%, #2bee79 0%, transparent 20%)' }}></div>
+
+          <div className="relative z-10 max-w-lg mx-auto lg:mx-0">
+            <h1 className="text-foreground tracking-tight text-4xl lg:text-5xl font-bold leading-tight mb-8">
+              Join OrderIQ Today
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Create an account to start ordering delicious food from the best
@@ -178,9 +184,11 @@ export default function CustomerSignUp({
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">💳</span>
+
+              {/* Feature 2 */}
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card border border-border shadow-sm">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                  <Icon icon="lucide:lock" className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">
@@ -191,9 +199,11 @@ export default function CustomerSignUp({
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🎯</span>
+
+              {/* Feature 3 */}
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-card border border-border shadow-sm">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                  <Icon icon="lucide:sparkles" className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">
@@ -206,6 +216,7 @@ export default function CustomerSignUp({
               </div>
             </div>
           </div>
+        </div>
 
           {/* Right Side - Form */}
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-border">
@@ -216,7 +227,7 @@ export default function CustomerSignUp({
               Fill in your details to get started
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               {/* Full Name */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">
@@ -227,10 +238,8 @@ export default function CustomerSignUp({
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  placeholder="John Doe"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.fullName ? "border-destructive" : "border-border"
-                  } bg-background`}
+                  className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                  placeholder="e.g. Jane Doe"
                 />
                 {errors.fullName && (
                   <p className="text-destructive text-sm mt-1">
@@ -249,10 +258,8 @@ export default function CustomerSignUp({
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="you@example.com"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.email ? "border-destructive" : "border-border"
-                  } bg-background`}
+                  className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                  placeholder="jane@example.com"
                 />
                 {errors.email && (
                   <p className="text-destructive text-sm mt-1">
@@ -297,10 +304,8 @@ export default function CustomerSignUp({
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="3001234567"
-                    className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                      errors.phone ? "border-destructive" : "border-border"
-                    } bg-background`}
+                    className="form-input flex-1 w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                    placeholder="(555) 000-0000"
                   />
                 </div>
                 {errors.countryCode && (
@@ -337,12 +342,19 @@ export default function CustomerSignUp({
                 )}
                 {/* Password strength */}
                 {formData.password && (
-                  <div className="mt-2">
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${passwordInfo.color}`}
-                        style={{ width: `${passwordInfo.pct}%` }}
-                      />
+                  <div className="mt-3 px-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-muted-foreground">Strength</span>
+                      <span className={`text-xs font-bold ${passwordInfo.color}`}>{passwordInfo.label}</span>
+                    </div>
+                    <div className="flex gap-2 h-1.5 w-full">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-full flex-1 rounded-full ${i <= Math.ceil(passwordInfo.pct / 25) ? passwordInfo.color : 'bg-border'
+                            }`}
+                        ></div>
+                      ))}
                     </div>
                     <p className={`text-xs mt-1 ${passwordInfo.color}`}>
                       {passwordInfo.label}
@@ -402,18 +414,10 @@ export default function CustomerSignUp({
                   Already have account?
                 </span>
               </div>
-            </div>
-
-            {/* Sign In Link */}
-            <button
-              onClick={onSwitchToSignIn}
-              className="w-full border-2 border-primary text-primary py-3 rounded-lg font-bold hover:bg-primary/5 transition-colors"
-            >
-              Sign In
-            </button>
+            </form>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
