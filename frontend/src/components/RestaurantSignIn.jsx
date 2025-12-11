@@ -167,8 +167,8 @@ export default function RestaurantSignIn({ onBack, onSwitchToSignUp, onLoginSucc
                     <Icon icon="lucide:info" className="text-primary shrink-0 mt-0.5" />
                     <div className="text-sm text-foreground">
                       <p className="font-bold">Demo Credentials:</p>
-                      <p>Email: <span className="font-mono">owner@bistro.com</span></p>
-                      <p>Password: <span className="font-mono">OrderIQ2024!</span></p>
+                      <p>Email: <span className="font-mono">owner@cafe.com</span></p>
+                      <p>Password: <span className="font-mono">cafe1234</span></p>
                     </div>
                   </div>
                 </div>

@@ -9,12 +9,12 @@ export default function RestaurantProfile() {
 
     // Mock restaurant profile data
     const [profile, setProfile] = useState({
-        restaurantName: "Karachi Biryani House",
-        ownerName: user?.name || "Ali Khan",
-        email: user?.email || "restaurant@demo.com",
-        phone: user?.phone || "03001234567",
-        address: "123 Food Street, Lahore, Punjab",
-        cuisine: "Pakistani",
+        restaurantName: user?.restaurantName || "My Restaurant",
+        ownerName: user?.name || "Restaurant Owner",
+        email: user?.email || "",
+        phone: user?.phone || "",
+        address: user?.address || "",
+        cuisine: user?.cuisine || "General",
         description: "Authentic Karachi biryani with traditional recipes passed down for generations",
         operatingHours: {
             monday: { open: "10:00", close: "22:00", closed: false },
