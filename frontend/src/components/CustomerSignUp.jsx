@@ -7,6 +7,7 @@ import { sendWelcomeCustomerEmail } from "@/lib/emailAPI";
 import { toast } from "sonner";
 import { isValidEmail, getPasswordStrength } from "@/lib/validation";
 import { saveCustomer } from "@/lib/supabase";
+import { Icon } from "@iconify/react";
 
 export default function CustomerSignUp({
   onBack,
@@ -40,6 +41,7 @@ export default function CustomerSignUp({
   const validateForm = () => {
     const newErrors = {};
     if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
+    else if (/^\d+$/.test(formData.fullName.trim())) newErrors.fullName = "Name cannot be only numbers";
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!isValidEmail(formData.email))
       newErrors.email = "Invalid email format";
@@ -149,13 +151,8 @@ export default function CustomerSignUp({
             Back to OrderIQ
           </button>
         </div>
-        <button
-          onClick={onBack}
-          className="flex min-w-[84px] items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-background hover:bg-muted transition-colors text-foreground text-sm font-bold"
-        >
-          <span className="truncate">Back to OrderIQ</span>
-        </button>
-      </header>
+      </div>
+
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col lg:flex-row">
@@ -218,204 +215,207 @@ export default function CustomerSignUp({
           </div>
         </div>
 
-          {/* Right Side - Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-border">
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              Create Account
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              Fill in your details to get started
-            </p>
+        {/* Right Side - Form */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 border border-border">
+          <h2 className="text-3xl font-bold text-foreground mb-2">
+            Create Account
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            Fill in your details to get started
+          </p>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              {/* Full Name */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-                  placeholder="e.g. Jane Doe"
-                />
-                {errors.fullName && (
-                  <p className="text-destructive text-sm mt-1">
-                    {errors.fullName}
-                  </p>
-                )}
-              </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                placeholder="e.g. Jane Doe"
+              />
+              {errors.fullName && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.fullName}
+                </p>
+              )}
+            </div>
 
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-                  placeholder="jane@example.com"
-                />
-                {errors.email && (
-                  <p className="text-destructive text-sm mt-1">
-                    {errors.email}
-                  </p>
-                )}
-                {emailValid !== null && (
-                  <p
-                    className={`text-xs mt-1 ${
-                      emailValid ? "text-green-600" : "text-destructive"
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="form-input flex w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                placeholder="jane@example.com"
+              />
+              {errors.email && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.email}
+                </p>
+              )}
+              {emailValid !== null && (
+                <p
+                  className={`text-xs mt-1 ${emailValid ? "text-green-600" : "text-destructive"
                     }`}
-                  >
-                    {emailValid ? "Valid email" : "Invalid email format"}
-                  </p>
-                )}
-              </div>
+                >
+                  {emailValid ? "Valid email" : "Invalid email format"}
+                </p>
+              )}
+            </div>
 
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Phone Number
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    name="countryCode"
-                    value={formData.countryCode}
-                    onChange={handleInputChange}
-                    className={`w-28 px-3 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                      errors.countryCode
-                        ? "border-destructive"
-                        : "border-border"
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Phone Number
+              </label>
+              <div className="flex gap-2">
+                <select
+                  name="countryCode"
+                  value={formData.countryCode}
+                  onChange={handleInputChange}
+                  className={`w-28 px-3 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${errors.countryCode
+                    ? "border-destructive"
+                    : "border-border"
                     } bg-background`}
-                  >
-                    <option value="+92">+92 (PK)</option>
-                    <option value="+1">+1 (US)</option>
-                    <option value="+44">+44 (UK)</option>
-                    <option value="+61">+61 (AU)</option>
-                    <option value="+91">+91 (IN)</option>
-                  </select>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="form-input flex-1 w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-                    placeholder="(555) 000-0000"
-                  />
-                </div>
-                {errors.countryCode && (
-                  <p className="text-destructive text-sm mt-1">
-                    {errors.countryCode}
-                  </p>
-                )}
-                {errors.phone && (
-                  <p className="text-destructive text-sm mt-1">
-                    {errors.phone}
-                  </p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Password
-                </label>
+                >
+                  <option value="+92">+92 (PK)</option>
+                  <option value="+1">+1 (US)</option>
+                  <option value="+44">+44 (UK)</option>
+                  <option value="+61">+61 (AU)</option>
+                  <option value="+91">+91 (IN)</option>
+                </select>
                 <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleInputChange}
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.password ? "border-destructive" : "border-border"
-                  } bg-background`}
+                  className="form-input flex-1 w-full rounded-xl border border-border bg-background px-5 h-14 text-base text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                  placeholder="(555) 000-0000"
                 />
-                {errors.password && (
-                  <p className="text-destructive text-sm mt-1">
-                    {errors.password}
-                  </p>
-                )}
-                {/* Password strength */}
-                {formData.password && (
-                  <div className="mt-3 px-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-muted-foreground">Strength</span>
-                      <span className={`text-xs font-bold ${passwordInfo.color}`}>{passwordInfo.label}</span>
-                    </div>
-                    <div className="flex gap-2 h-1.5 w-full">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div
-                          key={i}
-                          className={`h-full flex-1 rounded-full ${i <= Math.ceil(passwordInfo.pct / 25) ? passwordInfo.color : 'bg-border'
-                            }`}
-                        ></div>
-                      ))}
-                    </div>
-                    <p className={`text-xs mt-1 ${passwordInfo.color}`}>
-                      {passwordInfo.label}
-                    </p>
-                    {passwordInfo.suggestions.length > 0 && (
-                      <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                        {passwordInfo.suggestions.slice(0, 3).map((s) => (
-                          <li key={s}>• {s}</li>
-                        ))}
-                      </ul>
-                    )}
+              </div>
+              {errors.countryCode && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.countryCode}
+                </p>
+              )}
+              {errors.phone && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.phone}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="••••••••"
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${errors.password ? "border-destructive" : "border-border"
+                  } bg-background`}
+              />
+              {errors.password && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.password}
+                </p>
+              )}
+              {/* Password strength */}
+              {formData.password && (
+                <div className="mt-3 px-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-muted-foreground">Strength</span>
+                    <span className={`text-xs font-bold ${passwordInfo.color}`}>{passwordInfo.label}</span>
                   </div>
-                )}
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  placeholder="••••••••"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${
-                    errors.confirmPassword
-                      ? "border-destructive"
-                      : "border-border"
-                  } bg-background`}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-destructive text-sm mt-1">
-                    {errors.confirmPassword}
+                  <div className="flex gap-2 h-1.5 w-full">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-full flex-1 rounded-full ${i <= Math.ceil(passwordInfo.pct / 25) ? passwordInfo.color : 'bg-border'
+                          }`}
+                      ></div>
+                    ))}
+                  </div>
+                  <p className={`text-xs mt-1 ${passwordInfo.color}`}>
+                    {passwordInfo.label}
                   </p>
-                )}
-              </div>
+                  {passwordInfo.suggestions.length > 0 && (
+                    <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                      {passwordInfo.suggestions.slice(0, 3).map((s) => (
+                        <li key={s}>• {s}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-6"
-              >
-                {isLoading ? "Creating Account..." : "Create Account"}
-              </button>
-            </form>
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                placeholder="••••••••"
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors ${errors.confirmPassword
+                  ? "border-destructive"
+                  : "border-border"
+                  } bg-background`}
+              />
+              {errors.confirmPassword && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.confirmPassword}
+                </p>
+              )}
+            </div>
 
-            {/* Divider */}
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-muted-foreground">
-                  Already have account?
-                </span>
-              </div>
-            </form>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-6"
+            >
+              {isLoading ? "Creating Account..." : "Create Account"}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-muted-foreground">
+                Already have account?
+              </span>
+            </div>
           </div>
+
+          {/* Sign In Button */}
+          <button
+            onClick={onSwitchToSignIn}
+            className="w-full border-2 border-primary text-primary py-3 rounded-lg font-bold hover:bg-primary/5 transition-colors"
+          >
+            Sign In
+          </button>
         </div>
       </main>
     </div>

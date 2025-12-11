@@ -263,7 +263,7 @@ export default function CustomerSignIn({ onBack, onSwitchToSignUp, onLoginSucces
               <div className="text-sm text-foreground">
                 <p className="font-bold mb-1">Demo Credentials:</p>
                 <p className="font-mono bg-primary/20 px-2 py-1 rounded w-fit mb-1 text-xs">
-                  Email: demo@foodie.com
+                  Email: demo@orderiq.com
                 </p>
                 <p className="font-mono bg-primary/20 px-2 py-1 rounded w-fit text-xs">
                   Pass: password123

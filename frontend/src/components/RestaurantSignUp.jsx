@@ -10,6 +10,7 @@ import { sendWelcomeRestaurantEmail } from "@/lib/emailAPI"
 import { toast } from "sonner"
 import { isValidEmail, getPasswordStrength } from "@/lib/validation"
 import { saveRestaurant } from "@/lib/supabase";
+import { Icon } from "@iconify/react";
 
 export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuccess }) {
   const [formData, setFormData] = useState({
@@ -41,7 +42,10 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
   const validateForm = () => {
     const newErrors = {}
     if (!formData.restaurantName.trim()) newErrors.restaurantName = "Restaurant name is required"
+    else if (/^\d+$/.test(formData.restaurantName.trim())) newErrors.restaurantName = "Restaurant name cannot be only numbers"
+
     if (!formData.ownerName.trim()) newErrors.ownerName = "Owner name is required"
+    else if (/^\d+$/.test(formData.ownerName.trim())) newErrors.ownerName = "Owner name cannot be only numbers"
     if (!formData.email.trim()) newErrors.email = "Email is required"
     else if (!isValidEmail(formData.email)) newErrors.email = "Invalid email format"
     if (!formData.countryCode) newErrors.countryCode = "Country code is required"
@@ -49,6 +53,7 @@ export default function RestaurantSignUp({ onBack, onSwitchToSignIn, onSignupSuc
     else if (!/^\d{6,15}$/.test(formData.phone)) newErrors.phone = "Phone must be numeric (6-15 digits)"
     if (!formData.address.trim()) newErrors.address = "Address is required"
     if (!formData.cuisine) newErrors.cuisine = "Please select a cuisine type"
+    else if (/^\d+$/.test(formData.cuisine.trim())) newErrors.cuisine = "Cuisine type cannot be only numbers"
     if (!formData.password.trim()) newErrors.password = "Password is required"
     else if (formData.password.length < 8) newErrors.password = "Must be at least 8 characters"
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match"
