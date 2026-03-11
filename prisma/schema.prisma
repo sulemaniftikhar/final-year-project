@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum Role {
+  CUSTOMER
+  RESTAURANT_OWNER
+  ADMIN
+}
+
+enum RestaurantStatus {
+  OPEN
+  PAUSED
+  CLOSED
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+  DINEIN
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum Badge {
+  BESTSELLER
+  NEW
+}
+
+enum PaymentMethod {
+  GOOGLE_PAY
+  CASH
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum TeamRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum TeamMemberStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum RewardType {
+  EARNED
+  REDEEMED
+}
+
+// ----------------------------------------------------------------------------
+// Models
+// ----------------------------------------------------------------------------
+
+model User {
+  id             String    @id @default(uuid())
+  firebaseUid    String    @unique
+  fullName       String
+  email          String    @unique
+  phone          String?
+  role           Role      @default(CUSTOMER)
+  avatar         String?
+  rewardPoints   Int       @default(0)
+  referralCode   String?   @unique
+  
+  // Relations
+  restaurants    Restaurant[]   @relation("OwnerRestaurants")
+  addresses      Address[]
+  orders         Order[]        @relation("CustomerOrders")
+  teamMemberships TeamMember[]
+  rewards        Reward[]
+  favorites      Favorite[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Restaurant {
+  id             String    @id @default(uuid())
+  ownerId        String
+  owner          User      @relation("OwnerRestaurants", fields: [ownerId], references: [id])
+  
+  name           String
+  businessType   String
+  cuisineTypes   String[]
+  description    String?
+  
+  address        String
+  city           String
+  area           String
+  
+  logo           String?
+  coverImage     String?
+  
+  rating         Float     @default(0.0)
+  reviewCount    Int       @default(0)
+  
+  openingTime    String    // e.g., "09:00"
+  closingTime    String    // e.g., "22:00"
+  status         RestaurantStatus @default(OPEN)
+  
+  deliveryFee    Float     @default(0.0)
+  priceRange     String    @default("$$") // e.g., "$", "$$", "$$$"
+  promoted       Boolean   @default(false)
+  
+  // Service Types
+  dineIn         Boolean   @default(true)
+  takeaway       Boolean   @default(true)
+  delivery       Boolean   @default(true)
+
+  // Relations
+  categories     Category[]
+  menuItems      MenuItem[]
+  orders         Order[]
+  teamMembers    TeamMember[]
+  favoritedBy    Favorite[]
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Category {
+  id             String      @id @default(uuid())
+  restaurantId   String
+  restaurant     Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  name           String
+  sortOrder      Int         @default(0)
+  visible        Boolean     @default(true)
+  
+  menuItems      MenuItem[]
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([restaurantId, name]) // Category names should be unique per restaurant
+}
+
+model MenuItem {
+  id             String      @id @default(uuid())
+  restaurantId   String
+  restaurant     Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  categoryId     String
+  category       Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  name           String
+  description    String?
+  price          Float
+  image          String?
+  
+  inStock        Boolean     @default(true)
+  delivery       Boolean     @default(true)
+  pickup         Boolean     @default(true)
+  dineIn         Boolean     @default(true)
+  
+  badge          Badge?
+
+  orderItems     OrderItem[]
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model Order {
+  id             String      @id @default(uuid())
+  orderNumber    String      @unique // e.g., "#ORD-12345"
+  
+  restaurantId   String
+  restaurant     Restaurant  @relation(fields: [restaurantId], references: [id])
+  
+  customerId     String
+  customer       User        @relation("CustomerOrders", fields: [customerId], references: [id])
+  
+  type           OrderType
+  table          String?     // For DINEIN
+  status         OrderStatus @default(PENDING)
+  
+  subtotal       Float
+  deliveryFee    Float       @default(0.0)
+  taxes          Float       @default(0.0)
+  platformFee    Float       @default(0.0)
+  total          Float
+  
+  deliveryAddress String?    // JSON string or plain text for snapshot of address
+  customerNotes  String?
+  internalNotes  String?
+  
+  prepTime               Int?  // Estimated prep time in minutes once accepted
+  estimatedDeliveryTime  DateTime?
+  
+  paymentMethod  PaymentMethod @default(GOOGLE_PAY)
+  paymentStatus  PaymentStatus @default(PENDING)
+
+  // Relations
+  items          OrderItem[]
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model OrderItem {
+  id             String    @id @default(uuid())
+  orderId        String
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  menuItemId     String
+  menuItem       MenuItem  @relation(fields: [menuItemId], references: [id])
+  
+  name           String    // Snapshot of menu item name at time of order
+  quantity       Int
+  price          Float     // Snapshot of price at time of order
+  modifiers      String?   // E.g., "Extra spicy, no onions"
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  label       String   // e.g., "Home", "Work"
+  address     String
+  city        String
+  area        String
+  isDefault   Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TeamMember {
+  id             String           @id @default(uuid())
+  restaurantId   String
+  restaurant     Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  userId         String?           // Nullable because invite might be sent to non-user email
+  user           User?            @relation(fields: [userId], references: [id])
+  
+  email          String           // Used for invites
+  name           String
+  role           TeamRole         @default(STAFF)
+  status         TeamMemberStatus @default(PENDING)
+  
+  invitedAt      DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([restaurantId, email])
+}
+
+model Reward {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  points      Int
+  type        RewardType
+  source      String      // e.g., "Order #1234", "Referral"
+  description String?
+  
+  createdAt   DateTime    @default(now())
+}
+
+model Favorite {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime   @default(now())
+
+  @@id([userId, restaurantId])
+}
