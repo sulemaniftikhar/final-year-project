@@ -392,11 +392,11 @@ This section documents the mutation testing work completed as part of CS-4006 (S
 
 | Metric | Baseline (Task 2) | After Improvement (Task 4) |
 |---|---|---|
-| Mutation Score | 42.41% | 47.86% |
-| Mutants Killed | 109 / 257 | 123 / 257 |
-| Mutants Survived | 115 | 101 |
+| Mutation Score | 42.41% | 58.75% |
+| Mutants Killed | 109 / 257 | 151 / 257 |
+| Mutants Survived | 115 | 96 |
 | Line Coverage | 84.50% | 84.50% |
-| Tests | 25 | 31 |
+| Tests | 25 | 34 |
 
 ### How to Reproduce
 
