@@ -1,0 +1,681 @@
+\documentclass[12pt, a4paper]{article}
+
+% --- Packages ---
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{mdframed}
+\usepackage{amsmath}
+\usepackage{caption}
+
+% --- Colours ---
+\definecolor{killed}{RGB}{34, 139, 34}
+\definecolor{survived}{RGB}{200, 0, 0}
+\definecolor{codebg}{RGB}{248, 248, 248}
+\definecolor{codeframe}{RGB}{200, 200, 200}
+\definecolor{original}{RGB}{0, 80, 160}
+\definecolor{mutated}{RGB}{160, 0, 0}
+\definecolor{headblue}{RGB}{30, 60, 120}
+
+% --- Listings config ---
+\lstdefinestyle{js}{
+  language=Java,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  stringstyle=\color{orange!80!black},
+  commentstyle=\color{gray}\itshape,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  breaklines=true,
+  captionpos=b,
+  showstringspaces=false,
+  tabsize=2,
+  morekeywords={const,let,var,async,await,require,exports,module,true,false,null,undefined},
+}
+
+\lstset{style=js}
+
+% --- Header / Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small CS-4006: Software Testing}
+\lhead{\small OrderIQ --- Mutation Testing Report}
+\rfoot{\small Page \thepage}
+\lfoot{\small FAST NUCES --- Spring 2025}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% --- Section styling ---
+\titleformat{\section}{\large\bfseries\color{headblue}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+% --- Hyperref ---
+\hypersetup{
+  colorlinks=true,
+  linkcolor=headblue,
+  urlcolor=headblue,
+}
+
+% --- Custom environments ---
+\newmdenv[
+  backgroundcolor=codebg,
+  linecolor=codeframe,
+  linewidth=1pt,
+  innertopmargin=8pt,
+  innerbottommargin=8pt,
+  innerleftmargin=10pt,
+  innerrightmargin=10pt,
+]{infobox}
+
+\newmdenv[
+  backgroundcolor=survived!8,
+  linecolor=survived,
+  linewidth=1.2pt,
+  innertopmargin=8pt,
+  innerbottommargin=8pt,
+  innerleftmargin=10pt,
+  innerrightmargin=10pt,
+]{mutantbox}
+
+% ============================================================
+\begin{document}
+% ============================================================
+
+% --- Title Page ---
+\begin{titlepage}
+  \centering
+  \vspace*{1cm}
+
+  {\large FAST --- National University of Computer and Emerging Sciences}\\[0.2cm]
+  {\large Department of Computer Science}\\[0.1cm]
+  {\normalsize Chiniot-Faisalabad Campus}
+
+  \vspace{1.5cm}
+  \rule{\linewidth}{0.4pt}
+  \vspace{0.4cm}
+
+  {\LARGE\bfseries Mutation Testing Assignment}\\[0.3cm]
+  {\large Evaluating the Fault-Finding Capability of the OrderIQ Test Suite}
+
+  \vspace{0.4cm}
+  \rule{\linewidth}{0.4pt}
+
+  \vspace{1cm}
+  {\large CS-4006: Software Testing}\\[0.1cm]
+
+\vspace{1.5cm}
+\begin{tabular}{|l|l|}
+  \hline
+  \multicolumn{2}{|c|}{\textbf{Group Information}} \\
+  \hline
+  FYP Title:      & OrderIQ \\[0.3cm]
+  Member 1 (ID):  & 22F-3329 \\[0.3cm]
+  Member 2 (ID):  & 22F-3350 \\[0.3cm]
+  Member 3 (ID):  & 22F-8778 \\[0.3cm]
+  Supervisor:     & Dr. Ammar Rafiq \\[0.3cm]
+  Tech Stack:     & JavaScript (Node.js / React) \\[0.3cm]
+  Target Module:  & \texttt{backend/controllers/orderController.js} \\[0.3cm]
+  \hline
+\end{tabular}
+
+  \vfill
+  {\small Submitted on \today}
+\end{titlepage}
+
+% --- Table of Contents ---
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Task 1 --- Baseline Assessment}
+% ============================================================
+
+\subsection{Target Module Selection}
+
+The module selected for this assignment is \texttt{backend/controllers/orderController.js}. This file is the central controller responsible for the core transactional logic of the OrderIQ platform: creating new customer orders, retrieving order history with role-based filtering, updating order status, and enforcing access control on individual order records.
+
+The module was chosen because it satisfies every selection criterion in a meaningful way. It contains non-trivial business logic including payment method guards, role-based query branching, ownership and administration checks, and a conditional delivery time calculation. It exports four individually testable functions. All four contain conditional branches including equality checks, logical conjunctions and disjunctions, arithmetic calculations, and ternary expressions. These constructs are exactly the fault classes that mutation testing is designed to expose.
+
+From a safety perspective, this module is the highest-risk component in the system. A silent bug in the authorization logic of \texttt{updateOrderStatus} could allow an unauthorized user to accept or reject an order on behalf of a restaurant. A fault in the payment guard inside \texttt{createOrder} could cause a restaurant's cash-on-delivery restriction to be silently ignored. No amount of UI-level testing would catch either of these scenarios reliably.
+
+\subsection{Coverage Analysis}
+
+Before running the mutation tool, the following command was executed inside the \texttt{backend/} directory to establish the coverage baseline. All 25 tests were confirmed passing before proceeding.
+
+\begin{lstlisting}[caption={Coverage command}]
+npm run test:coverage
+# jest --coverage --forceExit
+\end{lstlisting}
+
+\subsubsection*{Baseline Coverage Report Table}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{Metric}      & \textbf{Value} & \textbf{Uncovered Lines / Notes}                         & \textbf{Tool} \\
+\midrule
+Line Coverage        & 84.50\%        & Lines 87, 92--93, 135--141, 188--190, 195--196, 227--228 & Jest          \\
+Branch Coverage      & 84.48\%        & Socket.io error branches, error catch blocks             & Jest          \\
+Function Coverage    & 100.00\%       & All four exported functions are called                   & Jest          \\
+Total Test Count     & 25             & ---                                                      & Jest          \\
+Tests Passing        & 25 / 25        & Must be 100\% before mutation run                        & ---           \\
+\bottomrule
+\end{tabular}
+\caption{Baseline Coverage Metrics (Pre-Mutation Run)}
+\end{table}
+
+The uncovered lines fall into two groups. The first group (lines 87 and 188--190) covers the Socket.io \texttt{emit} calls that broadcast real-time events to connected clients. These branches require a live Socket.io server instance and were intentionally excluded from unit tests which mock the \texttt{io} object as \texttt{null}. The second group (lines 92--93, 135--141, 195--196, 227--228) covers the \texttt{catch} blocks at the end of each exported function. These are error handlers for unexpected database failures and are difficult to trigger cleanly in a mocked Prisma environment.
+
+\subsection{Preliminary Analysis}
+
+The coverage numbers tell a partial story. With 84.5\% line coverage and 100\% function coverage, a surface-level reading suggests the test suite is thorough. However, coverage is a measure of \emph{which} lines were executed during testing, not of \emph{whether} the tests can distinguish correct code from incorrect code.
+
+Consider the \texttt{updateOrderStatus} function. The authorization guard on line 148 reads:
+
+\begin{lstlisting}
+if (order.restaurant.ownerId !== req.user.id && req.user.role !== 'ADMIN') {
+    return res.status(403)...
+}
+\end{lstlisting}
+
+A test that only exercises this line with a non-owner user achieves line coverage. It does not check whether the \texttt{\&\&} operator could be silently replaced with \texttt{||} --- a change that would cause the legitimate owner to be incorrectly blocked from managing their own orders. Coverage has no awareness of this vulnerability. The mutation score, computed after the next task, will expose the true gap between what the tests execute and what they actually verify.
+
+% ============================================================
+\section{Task 2 --- The Mutation Run}
+% ============================================================
+
+\subsection{Tool Setup}
+
+Since OrderIQ uses a JavaScript and Node.js stack, the prescribed mutation testing tool is \textbf{Stryker} with the \textbf{Jest} runner. The following commands were used to install and initialize Stryker.
+
+\begin{lstlisting}[caption={Stryker installation}]
+npm install --save-dev @stryker-mutator/core @stryker-mutator/jest-runner
+\end{lstlisting}
+
+The configuration file \texttt{stryker.config.mjs} was created at the root of the \texttt{backend/} directory with the following content:
+
+\begin{lstlisting}[caption={stryker.config.mjs}]
+export default {
+  packageManager: 'npm',
+  reporters: ['html', 'clear-text', 'progress'],
+  testRunner: 'jest',
+  coverageAnalysis: 'perTest',
+  mutate: ['controllers/orderController.js'],
+  htmlReporter: {
+    baseDir: '../reports/mutation_baseline',
+  },
+  timeoutMS: 15000,
+  timeoutFactor: 1.5,
+};
+\end{lstlisting}
+
+The mutation run was executed with the command \texttt{npx stryker run}. Before executing, all 25 tests were confirmed passing with \texttt{npm test}, satisfying the critical prerequisite that the baseline test suite must have no failures.
+
+\subsection{Mutation Operator Terminology}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Term}             & \textbf{Definition}                                                & \textbf{Stryker Label}      \\
+\midrule
+Mutant                    & Source file with one small syntactic change applied                & ---                         \\
+\textcolor{killed}{Killed Mutant}    & At least one test failed; the change was detected           & Killed                      \\
+\textcolor{survived}{Survived Mutant} & All tests still passed despite the code being wrong         & Survived                    \\
+Equivalent Mutant         & Syntactically different but semantically identical; excluded       & ---                         \\
+Mutation Score            & $\frac{\text{Killed}}{\text{Total} - \text{Equivalent}} \times 100$ & ---                        \\
+\bottomrule
+\end{tabular}
+\caption{Mutation Testing Terminology}
+\end{table}
+
+\subsection{Results Documentation Table}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Metric}              & \textbf{Value}   & \textbf{Significance}                              \\
+\midrule
+Total Mutants Generated      & 257              & Distinct code changes tested                       \\
+\textcolor{killed}{Mutants Killed}        & 109              & Faults the test suite successfully detected        \\
+\textcolor{survived}{Mutants Survived}    & 115              & Faults the tests completely missed                 \\
+Mutants Timed Out            & 0                & Counted as killed in score calculation             \\
+Equivalent Mutants (est.)    & 0                & Excluded from score calculation                    \\
+\textbf{Mutation Score}      & \textbf{42.41\%} & $109 / (257 - 0) \times 100$                       \\
+Baseline Line Coverage       & 84.50\%          & From Task 1                                        \\
+\textbf{Coverage--Score Gap} & \textbf{42.09 pp} & 84.50\% $-$ 42.41\% = 42.09 percentage points    \\
+\bottomrule
+\end{tabular}
+\caption{Mutation Run Results (Raw Statistics)}
+\end{table}
+
+The HTML report generated by Stryker is committed to the repository at \texttt{reports/mutation\_baseline/index.html}.
+
+\subsection{Reflection}
+
+The mutation score of 42.41\% against a baseline line coverage of 84.5\% produces a gap of over 42 percentage points. This is a significant result and it deserves a straightforward reading: the existing test suite executes most of the controller's code, but it verifies very little of the logic embedded within that code.
+
+The breakdown of survived mutants reveals where the problem lies. Of the 115 survived mutants, the majority fall into two Stryker categories: \texttt{ObjectLiteral} (51 mutants) and \texttt{BooleanLiteral} (36 mutants). These correspond to mutations that alter the shape or content of response objects, such as replacing \texttt{\{ success: false \}} with \texttt{\{ success: true \}} or \texttt{\{\}} in a 400 or 403 response. The tests check HTTP status codes but do not assert the content of the response body, so these mutations survive undetected.
+
+The remaining high-value survived mutants include two \texttt{LogicalOperator} mutations and six \texttt{ConditionalExpression} mutations. These target the conditional branches in the business logic itself. Their survival indicates that the tests cover the happy path but do not probe the exact input boundaries that the conditions protect. These are analysed in detail in Task 3.
+
+% ============================================================
+\section{Task 3 --- Mutant Analysis and Eradication}
+% ============================================================
+
+This task analyses four survived mutants selected from the baseline Stryker report. The selection satisfies the required criteria: at least one Logical Connector Replacement (LCR) mutant, at least one mutation involving an equality comparison (BCR), and at least two mutants from the same function. Mutants 1, 2, and 3 are all inside \texttt{createOrder}; Mutant 4 is inside \texttt{updateOrderStatus}.
+
+\bigskip
+
+% -----------------------------------------------------------
+\subsection*{Mutant 1 --- LCR in \texttt{createOrder()}, Line 31}
+% -----------------------------------------------------------
+
+\begin{mutantbox}
+\textbf{[M1] Mutant Identification}\\[4pt]
+\begin{tabular}{ll}
+Mutant ID (Stryker):    & LogicalOperator --- Line 31, Column 33 \\
+Source File:            & \texttt{controllers/orderController.js} \\
+Function / Method:      & \texttt{createOrder()} \\
+Line Number:            & 31 \\
+Mutation Operator:      & LCR (Logical Connector Replacement) \\
+\end{tabular}
+\end{mutantbox}
+
+\bigskip
+
+\textbf{[M2] The Mutation --- Original vs Mutated Code}
+
+\begin{lstlisting}[caption={Mutant 1: Original vs Mutated (Line 31)}]
+// ORIGINAL (Line 31):
+const requestedMethod = paymentMethod || 'CASH';
+
+// MUTATED (Line 31) --- LCR: || replaced with &&
+const requestedMethod = paymentMethod && 'CASH'; // <-- mutation
+\end{lstlisting}
+
+\textbf{[M3] Semantic Impact Analysis}
+
+This mutation alters how the controller determines the payment method when none is supplied by the client. In the original code, the short-circuit evaluation of \texttt{||} ensures that if \texttt{paymentMethod} is \texttt{undefined} or an empty string, the default value \texttt{'CASH'} is used. The subsequent guard on line 32 then checks whether the method is \texttt{'CASH'} before testing the restaurant's payment settings.
+
+Under the mutant, \texttt{paymentMethod \&\& 'CASH'} evaluates to \texttt{undefined} when no payment method is provided, because \texttt{undefined \&\& anything} short-circuits to \texttt{undefined}. The guard \texttt{if (requestedMethod === 'CASH')} then evaluates to \texttt{false}, and the cash restriction check is skipped entirely. A customer who submits an order without specifying a payment method would silently bypass the restaurant's cash-on-delivery restriction. The order would be created and accepted even at a restaurant that explicitly disabled cash payments. This is a financial and operational fault: the restaurant has no way of knowing the order arrived under terms they rejected.
+
+\textbf{[M4] Root Cause --- Why Did This Mutant Survive?}
+
+Every test in the baseline suite that involves a CASH payment explicitly includes \texttt{paymentMethod: 'CASH'} in the request body. When the string \texttt{'CASH'} is passed explicitly, both \texttt{'CASH' || 'CASH'} and \texttt{'CASH' \&\& 'CASH'} evaluate to \texttt{'CASH'}, so the mutation is invisible. No test exercised the boundary where \texttt{paymentMethod} is omitted in combination with a restaurant that has disabled cash. The gap is the absence of a test for the default-value path alongside the restriction-enabled path.
+
+\textbf{[M5] The Mutant-Killing Test Case}
+
+\begin{lstlisting}[caption={Test that kills Mutant 1}]
+test('[LCR kill] no paymentMethod + cashEnabled=false should return 400
+      (kills || -> && on line 31)', async () => {
+  /*
+   * Original: undefined || 'CASH' = 'CASH' -> triggers cash guard -> 400
+   * Mutant:   undefined && 'CASH' = undefined -> skips cash guard -> 201 (WRONG)
+   * Sending no paymentMethod. Only the original correctly defaults to 'CASH'
+   * and then catches the cashEnabled=false restriction.
+   */
+  prisma.restaurant.findUnique.mockResolvedValue({
+    id: 'r1',
+    paymentSettings: { cashEnabled: false },
+  });
+  const req = makeReq({ body: { ...baseBody } }); // no paymentMethod field
+  const res = makeRes();
+  await createOrder(req, res);
+  expect(res.status).toHaveBeenCalledWith(400);
+});
+\end{lstlisting}
+
+\textbf{[M6] Verification}
+
+After adding this test and re-running the full mutation suite, the mutant at Line 31 changed from \texttt{SURVIVED} to \texttt{KILLED}. The final Stryker report confirms this in the \texttt{reports/mutation\_final/index.html} output.
+
+\bigskip\hrule\bigskip
+
+% -----------------------------------------------------------
+\subsection*{Mutant 2 --- BCR in \texttt{createOrder()}, Line 32}
+% -----------------------------------------------------------
+
+\begin{mutantbox}
+\textbf{[M1] Mutant Identification}\\[4pt]
+\begin{tabular}{ll}
+Mutant ID (Stryker):    & ConditionalExpression --- Line 32, Column 13 \\
+Source File:            & \texttt{controllers/orderController.js} \\
+Function / Method:      & \texttt{createOrder()} \\
+Line Number:            & 32 \\
+Mutation Operator:      & BCR (Boolean Condition Replacement) \\
+\end{tabular}
+\end{mutantbox}
+
+\bigskip
+
+\textbf{[M2] The Mutation --- Original vs Mutated Code}
+
+\begin{lstlisting}[caption={Mutant 2: Original vs Mutated (Line 32)}]
+// ORIGINAL (Line 32):
+if (requestedMethod === 'CASH') {
+
+// MUTATED (Line 32) --- BCR: condition replaced with literal true
+if (true) {                        // <-- mutation
+\end{lstlisting}
+
+\textbf{[M3] Semantic Impact Analysis}
+
+The original guard is intentional: only CASH orders need to be checked against the restaurant's payment settings. Other methods, such as card payments, are always permitted regardless of the \texttt{cashEnabled} flag. By replacing the condition with \texttt{true}, the mutant forces all orders through the cash restriction check, regardless of payment method.
+
+Under this mutation, a customer attempting to pay by card at a restaurant that has disabled CASH would incorrectly receive a 400 error with the message ``Cash on Delivery is not accepted.'' This is plainly wrong. The customer chose a non-cash method, yet the system blocks the order with a cash-specific rejection message. In a live environment this would cause legitimate orders to fail and would likely drive customers away from restaurants that are actually ready to accept card payments.
+
+\textbf{[M4] Root Cause --- Why Did This Mutant Survive?}
+
+Every test in the baseline suite used \texttt{paymentMethod: 'CASH'} when testing the payment guard, and non-CASH payment tests only used restaurants without restrictions. No test combined a non-CASH payment method with a restaurant that had \texttt{cashEnabled: false}. Since only CASH tests went through the guard, and the guard was always reached in those tests, the mutation from \texttt{=== 'CASH'} to \texttt{true} produced identical outcomes for every test input. The exact boundary --- a non-CASH payment at a cash-restricted restaurant --- was missing.
+
+\textbf{[M5] The Mutant-Killing Test Case}
+
+\begin{lstlisting}[caption={Test that kills Mutant 2}]
+test('[BCR kill] non-CASH payment with cashEnabled=false should succeed
+      (kills === CASH -> true on line 32)', async () => {
+  /*
+   * Original: 'CARD' === 'CASH' = false -> skips guard -> 201
+   * Mutant:   if (true)         -> enters guard -> cashEnabled=false -> 400 (WRONG)
+   * CARD payment at a cash-disabled restaurant must succeed in the original code.
+   */
+  const fakeOrder = { id: 'o1', items: [], restaurant: {} };
+  prisma.restaurant.findUnique.mockResolvedValue({
+    id: 'r1',
+    paymentSettings: { cashEnabled: false },
+  });
+  prisma.order.create.mockResolvedValue(fakeOrder);
+  prisma.order.findUnique.mockResolvedValue(fakeOrder);
+  const req = makeReq({ body: { ...baseBody, paymentMethod: 'CARD' } });
+  const res = makeRes();
+  await createOrder(req, res);
+  expect(res.status).toHaveBeenCalledWith(201);
+});
+\end{lstlisting}
+
+\textbf{[M6] Verification}
+
+After adding this test and re-running the mutation suite, the mutant at Line 32 changed from \texttt{SURVIVED} to \texttt{KILLED}. The final Stryker report confirms the status change.
+
+\bigskip\hrule\bigskip
+
+% -----------------------------------------------------------
+\subsection*{Mutant 3 --- LCR in \texttt{createOrder()}, Line 44}
+% -----------------------------------------------------------
+
+\begin{mutantbox}
+\textbf{[M1] Mutant Identification}\\[4pt]
+\begin{tabular}{ll}
+Mutant ID (Stryker):    & LogicalOperator --- Line 44, Column 24 \\
+Source File:            & \texttt{controllers/orderController.js} \\
+Function / Method:      & \texttt{createOrder()} \\
+Line Number:            & 44 \\
+Mutation Operator:      & LCR (Logical Connector Replacement) \\
+\end{tabular}
+\end{mutantbox}
+
+\bigskip
+
+\textbf{[M2] The Mutation --- Original vs Mutated Code}
+
+\begin{lstlisting}[caption={Mutant 3: Original vs Mutated (Line 44)}]
+// ORIGINAL (Line 44) -- inside the orderItemsData mapping:
+modifiers: item.modifiers || null
+
+// MUTATED (Line 44) --- LCR: || replaced with &&
+modifiers: item.modifiers && null  // <-- mutation
+\end{lstlisting}
+
+\textbf{[M3] Semantic Impact Analysis}
+
+When a customer customises an order item (for example, adding extra cheese or removing onions), those choices are stored in the \texttt{modifiers} field. The original expression preserves the modifier array when it is present and falls back to \texttt{null} only when it is absent. Under the mutation, \texttt{item.modifiers \&\& null} always evaluates to \texttt{null}, regardless of whether modifiers were provided. A truthy array short-circuits to the second operand, which is \texttt{null}.
+
+The practical consequence is that any order customization is silently discarded when the order is written to the database. The restaurant receives the order with no record of the customer's special requests. In a dine-in context, this could cause incorrect food preparation. In a delivery context, a customer who paid extra for add-ons would not receive them. This class of bug is particularly dangerous because the system produces no error at all; everything appears to succeed from both the customer's and the restaurant's perspective.
+
+\textbf{[M4] Root Cause --- Why Did This Mutant Survive?}
+
+None of the baseline tests asserted the value of \texttt{modifiers} in the data passed to \texttt{prisma.order.create}. The tests that called \texttt{createOrder} successfully either passed items without modifiers or did not inspect the \texttt{items.create} argument at all. Checking that the order creation returns a 201 status says nothing about whether the item data passed to the database was correct. The test needed to assert the argument captured by the mock.
+
+\textbf{[M5] The Mutant-Killing Test Case}
+
+\begin{lstlisting}[caption={Test that kills Mutant 3}]
+test('[LCR kill] item modifiers are preserved when truthy
+      (kills || null -> && null on line 44)', async () => {
+  /*
+   * Original: truthy modifiers || null = modifiers (preserved)
+   * Mutant:   truthy modifiers && null = null       (lost -- WRONG)
+   * Asserts that the value passed to prisma.order.create matches the input.
+   */
+  const fakeOrder = { id: 'o1', items: [], restaurant: {} };
+  prisma.restaurant.findUnique.mockResolvedValue({
+    id: 'r1', paymentSettings: { cashEnabled: true },
+  });
+  prisma.order.create.mockResolvedValue(fakeOrder);
+  prisma.order.findUnique.mockResolvedValue(fakeOrder);
+  const modifiers = [{ name: 'Extra Cheese', price: 50 }];
+  const req = makeReq({
+    body: {
+      ...baseBody, paymentMethod: 'CASH',
+      items: [{ menuItemId: 'm1', name: 'Burger', quantity: 1,
+                price: 500, modifiers }],
+    },
+  });
+  const res = makeRes();
+  await createOrder(req, res);
+  const createCall = prisma.order.create.mock.calls[0][0];
+  expect(createCall.data.items.create[0].modifiers).toEqual(modifiers);
+});
+\end{lstlisting}
+
+\textbf{[M6] Verification}
+
+After adding this test and re-running the mutation suite, the mutant at Line 44 changed from \texttt{SURVIVED} to \texttt{KILLED}.
+
+\bigskip\hrule\bigskip
+
+% -----------------------------------------------------------
+\subsection*{Mutant 4 --- AOR in \texttt{updateOrderStatus()}, Line 170}
+% -----------------------------------------------------------
+
+\begin{mutantbox}
+\textbf{[M1] Mutant Identification}\\[4pt]
+\begin{tabular}{ll}
+Mutant ID (Stryker):    & ArithmeticOperator --- Line 170, Column 32 \\
+Source File:            & \texttt{controllers/orderController.js} \\
+Function / Method:      & \texttt{updateOrderStatus()} \\
+Line Number:            & 170 \\
+Mutation Operator:      & AOR (Arithmetic Operator Replacement) \\
+\end{tabular}
+\end{mutantbox}
+
+\bigskip
+
+\textbf{[M2] The Mutation --- Original vs Mutated Code}
+
+\begin{lstlisting}[caption={Mutant 4: Original vs Mutated (Line 170)}]
+// ORIGINAL (Line 170):
+estTime.setMinutes(
+  estTime.getMinutes() + updatedData.prepTime
+                       + (order.type === 'DELIVERY' ? 15 : 0)
+);
+
+// MUTATED (Line 170) --- AOR: first + replaced with -
+estTime.setMinutes(
+  estTime.getMinutes() - updatedData.prepTime  // <-- mutation
+                       + (order.type === 'DELIVERY' ? 15 : 0)
+);
+\end{lstlisting}
+
+\textbf{[M3] Semantic Impact Analysis}
+
+When a restaurant owner accepts an order and provides a preparation time, the system calculates an estimated delivery or pickup time. The original code adds the prep time to the current time. If the restaurant says an order takes 30 minutes, customers are told to expect it in 30 minutes (plus 15 minutes for delivery).
+
+Under the mutation, the prep time is subtracted. A 30-minute prep time results in an estimated delivery time 30 minutes \emph{in the past}, or in the best case, a time very close to the present that makes no sense to a waiting customer. The customer-facing tracking screen would display an already-elapsed estimated time, causing confusion and potentially prompting unnecessary complaints or re-orders. While the system does not crash, it produces logically wrong data that directly affects the user experience.
+
+\textbf{[M4] Root Cause --- Why Did This Mutant Survive?}
+
+The baseline tests used \texttt{prepTime: '0'} for all scenarios that checked the estimated delivery time. Because zero is its own additive inverse (\texttt{current + 0 = current - 0}), the mutation is completely invisible when \texttt{prepTime} is zero. The tests confirmed that a Date object was created and that it was an instance of \texttt{Date}, but they never checked the numeric value of the time for a non-zero prep duration. The gap is clear: the tests confirmed the shape of the output but not its value.
+
+\textbf{[M5] The Mutant-Killing Test Case}
+
+\begin{lstlisting}[caption={Test that kills Mutant 4}]
+test('[AOR kill] prepTime is added not subtracted to estimated time
+      (kills + -> - on line 170)', async () => {
+  /*
+   * Baseline used prepTime='0', making +0 and -0 identical.
+   * This test uses prepTime='30'. Original: now + 30 min (future).
+   * Mutant: now - 30 min (past). estTime must be greater than 'before'.
+   */
+  prisma.order.findUnique.mockResolvedValue({
+    ...existingOrder, type: 'PICKUP'
+  });
+  prisma.order.update.mockResolvedValue({ ...existingOrder, status: 'ACCEPTED' });
+  const before = new Date();
+  const req = makeReq({
+    user: { id: 'owner1', role: 'RESTAURANT_OWNER' },
+    params: { id: 'o1' },
+    body: { status: 'ACCEPTED', prepTime: '30' },
+  });
+  const res = makeRes();
+  await updateOrderStatus(req, res);
+  const updateCall = prisma.order.update.mock.calls[0][0];
+  const estTime = updateCall.data.estimatedDeliveryTime;
+  expect(estTime.getTime()).toBeGreaterThan(before.getTime());
+  const diffMinutes = Math.round((estTime - before) / 60000);
+  expect(diffMinutes).toBeGreaterThanOrEqual(29);
+  expect(diffMinutes).toBeLessThanOrEqual(31);
+});
+\end{lstlisting}
+
+\textbf{[M6] Verification}
+
+After adding this test and re-running the mutation suite, the mutant at Line 170 changed from \texttt{SURVIVED} to \texttt{KILLED}.
+
+% ============================================================
+\section{Task 4 --- Final Mutation Score Improvement}
+% ============================================================
+
+\subsection{Re-Execution of the Full Mutation Run}
+
+After adding all six new test cases developed during Task 3, the full test suite was re-run to confirm every test passed:
+
+\begin{lstlisting}[caption={Re-run commands}]
+npm test         # 31 tests, all passing
+npx stryker run  # final mutation run
+\end{lstlisting}
+
+The Stryker configuration was updated to write the final HTML report to \texttt{reports/mutation\_final/}, keeping the baseline and final reports separate for comparison.
+
+\subsection{Before and After Comparison Table}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{Metric}     & \textbf{Before (Task 2)} & \textbf{After (Task 4)} & \textbf{Change} \\
+\midrule
+Mutation Score      & 42.41\%                  & 47.86\%                 & +5.45 pp        \\
+Killed Mutants      & 109                      & 123                     & +14             \\
+Survived Mutants    & 115                      & 101                     & $-$14           \\
+New Tests Added     & ---                      & 6                       & ---             \\
+\bottomrule
+\end{tabular}
+\caption{Mutation Score Before and After Improvement}
+\end{table}
+
+\subsection{Reflection}
+
+The six new tests killed 14 additional mutants, lifting the mutation score from 42.41\% to 47.86\%, an improvement of 5.45 percentage points. Two things stand out on reflection.
+
+First, four of the fourteen killed mutants were \texttt{BooleanLiteral} mutations in response objects --- the tests that assert \texttt{success: false} on error responses and \texttt{success: true} on successful ones. This was the expected outcome since those tests directly targeted that class of mutation. However, they also reveal a broader pattern that the baseline tests had adopted: asserting only HTTP status codes and ignoring the body of the response. This is a weak testing habit. HTTP status codes are conventions; business logic lives in the response payload. Future tests should assert specific fields in every response, not just the status.
+
+Second, the improvement of 5.45 points, while meeting the threshold, also shows how resistant the remaining survived mutants are. The dominant survivors are \texttt{ObjectLiteral} mutations that replace entire response objects with empty ones, and \texttt{BooleanLiteral} mutations that flip internal boolean flags. Killing these systematically would require asserting the complete structure of every response body in every test, which is achievable but time-consuming. The more revealing insight is that a substantial portion of survived mutants target the Socket.io emission logic (lines 86--90 and 186--190), which cannot be killed by unit tests that mock \texttt{io} as null. Those mutations require integration tests with a live server. Writing this report has made clear that the testing strategy for OrderIQ should include at least one integration test layer for real-time features.
+
+Going forward, the most useful change to testing practice is to treat every assertion as an opportunity to check a boundary. The four mutant analyses in this report each uncovered a test that was checking the right thing in the wrong place: confirming an HTTP status while ignoring the exact condition that produced it. Boundary-value tests, specifically inputs designed around the exact edge of each conditional, are what kill mutations. That principle will shape how tests are written for the remainder of the project.
+
+% ============================================================
+\section{Deliverables Summary}
+% ============================================================
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Item} & \textbf{Description}                                         & \textbf{Location in Repository} \\
+\midrule
+D1 & PDF Report                                                         & Submitted separately            \\
+D2 & GitHub Branch                                                      & \texttt{mutation-testing-assignment} \\
+D3 & HTML Mutation Reports (baseline + final)                           & \texttt{reports/mutation\_baseline/} \\
+   &                                                                    & \texttt{reports/mutation\_final/}    \\
+D4 & HTML Coverage Report                                               & \texttt{reports/baseline\_coverage/} \\
+D5 & Test File                                                          & \texttt{backend/tests/orderController.test.js} \\
+\bottomrule
+\end{tabular}
+\caption{Submission Deliverables}
+\end{table}
+
+% ============================================================
+\appendix
+\section{Appendix A --- Mutation Operator Quick Reference}
+% ============================================================
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Operator} & \textbf{Name}                     & \textbf{Example Change}              \\
+\midrule
+ROR & Relational Operator Replacement           & \texttt{>} $\to$ \texttt{>=}         \\
+LCR & Logical Connector Replacement             & \texttt{\&\&} $\to$ \texttt{||}      \\
+AOR & Arithmetic Operator Replacement           & \texttt{+} $\to$ \texttt{-}          \\
+SVR & Statement / Value Replacement             & \texttt{return x} $\to$ \texttt{null}\\
+SDL & Statement Deletion                        & Remove entire statement              \\
+BCR & Boolean Condition Replacement             & condition $\to$ \texttt{true}        \\
+CRP & Constant Replacement                      & \texttt{0} $\to$ \texttt{1}          \\
+\bottomrule
+\end{tabular}
+\caption{Standard Mutation Operators}
+\end{table}
+
+\section{Appendix B --- How to Reproduce the Mutation Run}
+
+\begin{lstlisting}[caption={Full reproduction steps}]
+# 1. Install dependencies
+cd backend && npm install
+
+# 2. Confirm all tests pass (critical prerequisite)
+npm test
+
+# 3. Generate baseline coverage report
+npm run test:coverage
+# Output: reports/baseline_coverage/index.html
+
+# 4. Run baseline mutation testing
+npx stryker run
+# Output: reports/mutation_baseline/index.html
+
+# 5. (After adding new tests) Run final mutation testing
+#    Update stryker.config.mjs htmlReporter.baseDir
+#    to '../reports/mutation_final', then:
+npx stryker run
+# Output: reports/mutation_final/index.html
+\end{lstlisting}
+
+\end{document}

@@ -374,6 +374,72 @@ npm run build
 
 ---
 
+## Mutation Testing
+
+This section documents the mutation testing work completed as part of CS-4006 (Software Testing) at FAST NUCES, Spring 2025. The goal was to evaluate the fault-finding capability of the test suite using Stryker, the industry-standard mutation testing tool for JavaScript.
+
+### Target Module
+
+`backend/controllers/orderController.js` — the core business logic layer handling order creation, order retrieval with role-based filtering, status updates, and access control.
+
+### Tool
+
+- **Mutation Testing:** Stryker (`@stryker-mutator/core` + `@stryker-mutator/jest-runner`)
+- **Test Runner:** Jest
+- **Coverage:** Jest built-in coverage (`--coverage`)
+
+### Results Summary
+
+| Metric | Baseline (Task 2) | After Improvement (Task 4) |
+|---|---|---|
+| Mutation Score | 42.41% | 47.86% |
+| Mutants Killed | 109 / 257 | 123 / 257 |
+| Mutants Survived | 115 | 101 |
+| Line Coverage | 84.50% | 84.50% |
+| Tests | 25 | 31 |
+
+### How to Reproduce
+
+```bash
+# 1. Install backend dependencies
+cd backend && npm install
+
+# 2. Confirm all tests pass (required before any mutation run)
+npm test
+
+# 3. Generate the coverage report (Task 1)
+npm run test:coverage
+# HTML report: reports/baseline_coverage/index.html
+
+# 4. Run the baseline mutation testing (Task 2)
+#    Ensure stryker.config.mjs htmlReporter.baseDir is set to '../reports/mutation_baseline'
+npx stryker run
+# HTML report: reports/mutation_baseline/index.html
+
+# 5. Run the final mutation testing after new tests are added (Task 4)
+#    Update stryker.config.mjs htmlReporter.baseDir to '../reports/mutation_final'
+npx stryker run
+# HTML report: reports/mutation_final/index.html
+```
+
+### Repository Structure for This Assignment
+
+```
+reports/
+  baseline_coverage/   <- Task 1: Jest coverage HTML report
+  mutation_baseline/   <- Task 2: Stryker run before new tests
+  mutation_final/      <- Task 4: Stryker run after new tests
+
+backend/
+  tests/
+    orderController.test.js   <- all 31 tests (25 baseline + 6 killing tests)
+  stryker.config.mjs          <- Stryker configuration
+```
+
+The branch `mutation-testing-assignment` contains all test files, Stryker configuration, and HTML reports. The PDF report (`FYP-MutationTesting-Report.pdf`) covers all four assignment tasks with full mutant analysis.
+
+---
+
 ## License
 
 MIT — feel free to fork and build on this project.
