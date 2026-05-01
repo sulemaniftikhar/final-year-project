@@ -574,10 +574,10 @@ After adding this test and re-running the mutation suite, the mutant at Line 170
 
 \subsection{Re-Execution of the Full Mutation Run}
 
-After adding all six new test cases developed during Task 3, the full test suite was re-run to confirm every test passed:
+After adding all nine new test cases developed during Task 3, the full test suite was re-run to confirm every test passed:
 
 \begin{lstlisting}[caption={Re-run commands}]
-npm test         # 31 tests, all passing
+npm test         # 34 tests, all passing
 npx stryker run  # final mutation run
 \end{lstlisting}
 
@@ -591,10 +591,10 @@ The Stryker configuration was updated to write the final HTML report to \texttt{
 \toprule
 \textbf{Metric}     & \textbf{Before (Task 2)} & \textbf{After (Task 4)} & \textbf{Change} \\
 \midrule
-Mutation Score      & 42.41\%                  & 47.86\%                 & +5.45 pp        \\
-Killed Mutants      & 109                      & 123                     & +14             \\
-Survived Mutants    & 115                      & 101                     & $-$14           \\
-New Tests Added     & ---                      & 6                       & ---             \\
+Mutation Score      & 42.41\%                  & 58.75\%                 & +16.34 pp       \\
+Killed Mutants      & 109                      & 151                     & +42             \\
+Survived Mutants    & 115                      & 96                      & $-$19           \\
+New Tests Added     & ---                      & 9                       & ---             \\
 \bottomrule
 \end{tabular}
 \caption{Mutation Score Before and After Improvement}
@@ -602,13 +602,13 @@ New Tests Added     & ---                      & 6                       & ---  
 
 \subsection{Reflection}
 
-The six new tests killed 14 additional mutants, lifting the mutation score from 42.41\% to 47.86\%, an improvement of 5.45 percentage points. Two things stand out on reflection.
+The nine new tests killed 42 additional mutants, lifting the mutation score from 42.41\% to 58.75\%, an improvement of 16.34 percentage points. Three things stand out on reflection.
 
-First, four of the fourteen killed mutants were \texttt{BooleanLiteral} mutations in response objects --- the tests that assert \texttt{success: false} on error responses and \texttt{success: true} on successful ones. This was the expected outcome since those tests directly targeted that class of mutation. However, they also reveal a broader pattern that the baseline tests had adopted: asserting only HTTP status codes and ignoring the body of the response. This is a weak testing habit. HTTP status codes are conventions; business logic lives in the response payload. Future tests should assert specific fields in every response, not just the status.
+First, the largest single gain came not from writing new test scenarios but from strengthening assertions in the tests that already existed. Adding \texttt{expect.objectContaining()} checks on every response body --- asserting \texttt{success: true} on success responses, \texttt{success: false} and specific message strings on error responses --- directly killed the \texttt{BooleanLiteral} and \texttt{ObjectLiteral} mutations that dominated the survived list. This confirms that the baseline test suite was checking the right code paths but failing to verify the values those paths produced.
 
-Second, the improvement of 5.45 points, while meeting the threshold, also shows how resistant the remaining survived mutants are. The dominant survivors are \texttt{ObjectLiteral} mutations that replace entire response objects with empty ones, and \texttt{BooleanLiteral} mutations that flip internal boolean flags. Killing these systematically would require asserting the complete structure of every response body in every test, which is achievable but time-consuming. The more revealing insight is that a substantial portion of survived mutants target the Socket.io emission logic (lines 86--90 and 186--190), which cannot be killed by unit tests that mock \texttt{io} as null. Those mutations require integration tests with a live server. Writing this report has made clear that the testing strategy for OrderIQ should include at least one integration test layer for real-time features.
+Second, adding four error-path tests that force \texttt{prisma} to throw reduced the no-coverage mutant count from 33 to 10. The catch blocks in each controller function, which were previously never reached by any test, now have direct coverage. The 10 remaining no-coverage mutants are confined to the Socket.io \texttt{emit} bodies (lines 87--89), which cannot be triggered by unit tests that mock \texttt{io} as null. Those require integration tests with a live server.
 
-Going forward, the most useful change to testing practice is to treat every assertion as an opportunity to check a boundary. The four mutant analyses in this report each uncovered a test that was checking the right thing in the wrong place: confirming an HTTP status while ignoring the exact condition that produced it. Boundary-value tests, specifically inputs designed around the exact edge of each conditional, are what kill mutations. That principle will shape how tests are written for the remainder of the project.
+Third, the jump of 16.34 percentage points with only 9 tests illustrates how targeted testing outperforms volume. Each new test was designed around a specific mutation class rather than a general scenario, and each killed a cluster of mutants rather than a single one. Going forward, the most effective testing habit is to treat every assertion as an opportunity to check a boundary: confirm the exact value returned, not merely the fact that the function ran to completion. That principle will shape how tests are written for the remainder of the project.
 
 % ============================================================
 \section{Deliverables Summary}
