@@ -10,11 +10,17 @@ import {
     browserLocalPersistence,
     browserSessionPersistence
 } from 'firebase/auth';
+import { validatePassword } from '../utils/passwordUtils';
 
 /**
  * Register a new user with Firebase and sync to backend
  */
 export const registerUser = async (email, password, userData) => {
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+        throw new Error(passwordValidation.errors[0]);
+    }
+    
     let firebaseUser = null;
     try {
         // 1. Create user in Firebase Auth

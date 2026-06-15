@@ -99,15 +99,15 @@ const Navbar = () => {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
-    // Sync delivery mode to URL on landing page
-    if (location.pathname === '/') {
+    // Sync delivery mode to URL ONLY on landing page
+    if (location.pathname === "/") {
       const params = new URLSearchParams(location.search);
-      if (params.get('type') !== deliveryMode) {
-        params.set('type', deliveryMode);
+      if (params.get("type") !== deliveryMode) {
+        params.set("type", deliveryMode);
         navigate(`/?${params.toString()}`, { replace: true });
       }
     }
-  }, [deliveryMode, location.pathname]);
+  }, [deliveryMode, location.pathname, location.search]);
 
   const handleOpenLogin = () => {
     setIsForgotOpen(false);
@@ -150,8 +150,13 @@ const Navbar = () => {
     };
   }, []);
 
-  // Hide this navbar on restaurant and admin dashboard pages
-  if (location.pathname.startsWith('/restaurant') || location.pathname.startsWith('/admin')) {
+  // Hide this navbar on restaurant, admin, QR menu, and restaurant details pages
+  if (
+    location.pathname.startsWith('/restaurant') || 
+    location.pathname.startsWith('/admin') || 
+    location.pathname.startsWith('/menu') || 
+    location.pathname.startsWith('/customer/restaurant')
+  ) {
     return null;
   }
 

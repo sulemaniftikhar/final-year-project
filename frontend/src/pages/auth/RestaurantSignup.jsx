@@ -6,6 +6,7 @@ import { registerUser } from '../../services/auth.service';
 import { restaurantService } from '../../services/restaurant.service';
 import { uploadService } from '../../services/upload.service';
 import { useAuth } from '../../features/auth/AuthContext';
+import { validatePassword, getPasswordStrength } from '../../utils/passwordUtils';
 
 const RestaurantSignup = () => {
     const navigate = useNavigate();
@@ -86,26 +87,19 @@ const RestaurantSignup = () => {
         }
     };
 
-    const getPasswordStrength = () => {
-        const password = formData.password;
-        if (!password) return { strength: 0, label: '', color: '' };
-        
-        const hasLetter = /[a-zA-Z]/.test(password);
-        const hasNumber = /\d/.test(password);
-        const hasSpecial = /[^a-zA-Z0-9]/.test(password);
-        
-        if (hasLetter && hasNumber && hasSpecial) {
-            if (password.length >= 8) return { strength: 100, label: 'Strong', color: 'bg-green-500' };
-            return { strength: 66, label: 'Good', color: 'bg-yellow-500' };
-        }
-        
-        return { strength: 33, label: 'Weak', color: 'bg-red-500' };
-    };
+
 
     const nextStep = () => {
-        if (step === 1 && formData.password !== formData.confirmPassword) {
-            toast.error('Passwords do not match');
-            return;
+        if (step === 1) {
+            if (formData.password !== formData.confirmPassword) {
+                toast.error('Passwords do not match');
+                return;
+            }
+            const passwordValidation = validatePassword(formData.password);
+            if (!passwordValidation.isValid) {
+                toast.error(passwordValidation.errors[0]);
+                return;
+            }
         }
         setStep(prev => prev + 1);
     };
@@ -254,10 +248,10 @@ const RestaurantSignup = () => {
                                             <div className="mt-2">
                                                 <div className="flex items-center justify-between text-xs mb-1">
                                                     <span className="text-gray-500">Password strength</span>
-                                                    <span className={`font-bold ${getPasswordStrength().strength === 100 ? 'text-green-600' : getPasswordStrength().strength === 66 ? 'text-yellow-600' : 'text-red-600'}`}>{getPasswordStrength().label}</span>
+                                                    <span className={`font-bold ${getPasswordStrength(formData.password).strength === 100 ? 'text-green-600' : getPasswordStrength(formData.password).strength === 66 ? 'text-yellow-600' : 'text-red-600'}`}>{getPasswordStrength(formData.password).label}</span>
                                                 </div>
                                                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div className={`h-full ${getPasswordStrength().color} transition-all duration-300`} style={{ width: `${getPasswordStrength().strength}%` }}></div>
+                                                    <div className={`h-full ${getPasswordStrength(formData.password).color} transition-all duration-300`} style={{ width: `${getPasswordStrength(formData.password).strength}%` }}></div>
                                                 </div>
                                             </div>
                                         )}

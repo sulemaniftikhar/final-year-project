@@ -6,6 +6,7 @@ import { auth } from '../../config/firebase';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../features/auth/AuthContext';
+import { validatePassword, getPasswordStrength } from '../../utils/passwordUtils';
 
 const CustomerSignup = () => {
     const navigate = useNavigate();
@@ -57,21 +58,7 @@ const CustomerSignup = () => {
         }
     };
 
-    const getPasswordStrength = () => {
-        const { password } = formData;
-        if (!password) return { strength: 0, label: '', color: '' };
-        
-        const hasLetter = /[a-zA-Z]/.test(password);
-        const hasNumber = /\d/.test(password);
-        const hasSpecial = /[^a-zA-Z0-9]/.test(password);
-        
-        if (hasLetter && hasNumber && hasSpecial) {
-            if (password.length >= 8) return { strength: 100, label: 'Strong', color: 'bg-green-500' };
-            return { strength: 66, label: 'Good', color: 'bg-yellow-500' };
-        }
-        
-        return { strength: 33, label: 'Weak', color: 'bg-red-500' };
-    };
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -104,8 +91,10 @@ const CustomerSignup = () => {
             toast.error("Passwords don't match!");
             return;
         }
-        if (formData.password.length < 6) {
-            toast.error("Password must be at least 6 characters");
+        
+        const passwordValidation = validatePassword(formData.password);
+        if (!passwordValidation.isValid) {
+            toast.error(passwordValidation.errors[0]);
             return;
         }
 
@@ -155,7 +144,7 @@ const CustomerSignup = () => {
         }
     };
 
-    const strength = getPasswordStrength();
+    const strength = getPasswordStrength(formData.password);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center py-12 px-4">
